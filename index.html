@@ -16,7 +16,6 @@
       --text:#111827;
       --border:#e5e7eb;
 
-      /* tamanhos “grandes” para celular */
       --fs-base:18px;
       --fs-title:22px;
       --fs-btn:16px;
@@ -67,7 +66,7 @@
       max-width:980px;
       margin:0 auto;
       display:grid;
-      grid-template-columns: repeat(2, 1fr); /* 2x2 no celular */
+      grid-template-columns: repeat(2, 1fr);
       gap:10px;
     }
 
@@ -131,10 +130,9 @@
       cursor:pointer;
     }
 
-    /* DASHBOARD – cards grandes */
     .dashboard{
       display:grid;
-      grid-template-columns:1fr; /* grande no celular */
+      grid-template-columns:1fr;
       gap:14px;
     }
 
@@ -170,7 +168,6 @@
     .stat:nth-child(2) .value{ color:var(--primary); }
     .stat:nth-child(3) .value{ color:var(--success); }
 
-    /* VENDA */
     .produto{
       display:grid;
       grid-template-columns:96px 1fr;
@@ -200,7 +197,6 @@
       font-weight:800;
     }
 
-    /* HISTÓRICO */
     .historico-item{
       border:1px solid var(--border);
       border-radius:18px;
@@ -267,7 +263,6 @@
     }
     .historico-detalhes p{ margin:8px 0; }
 
-    /* DESKTOP: mostra 4 botões em linha e dashboard em 3 colunas */
     @media (min-width: 900px){
       :root{
         --fs-base:16px;
@@ -295,7 +290,6 @@
   </nav>
 
   <main>
-    <!-- DASHBOARD -->
     <section id="dashboard" class="card screen">
       <div class="dashboard">
         <div class="stat">
@@ -315,7 +309,6 @@
       </div>
     </section>
 
-    <!-- CADASTRO -->
     <section id="cadastro" class="card screen hidden">
       <input id="nomeProduto" placeholder="Nome do produto" />
       <input id="valorCompra" type="number" inputmode="decimal" placeholder="Valor de compra" />
@@ -323,10 +316,8 @@
       <button class="action" type="button" onclick="cadastrar()">Cadastrar Produto</button>
     </section>
 
-    <!-- VENDA -->
     <section id="venda" class="card screen hidden"></section>
 
-    <!-- HISTÓRICO -->
     <section id="historico" class="card screen hidden">
       <select id="filtroMes" onchange="atualizarHistorico()">
         <option value="">Todos os meses</option>
@@ -348,10 +339,54 @@
     let lucroTotal = 0;
     let imagemTemp = null;
 
+    /* ======= PONTE KODULAR (TinyDB) ======= */
+    function _b64enc(str){
+      // unicode-safe
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+    function _b64dec(b64){
+      return decodeURIComponent(escape(atob(b64)));
+    }
+
+    function enviarParaKodular(){
+      try{
+        const payload = JSON.stringify({ estoque, historico, lucroTotal });
+        const b64 = _b64enc(payload);
+        if(window.AppInventor && window.AppInventor.setWebViewString){
+          window.AppInventor.setWebViewString(b64);
+        }
+      }catch(e){}
+    }
+
+    // Kodular vai chamar isso no PageLoaded
+    window.loadFromKodularB64 = function(b64){
+      try{
+        if(!b64) return;
+        const json = _b64dec(b64);
+        const d = JSON.parse(json);
+
+        estoque = d.estoque || [];
+        historico = d.historico || [];
+        lucroTotal = parseFloat(d.lucroTotal) || 0;
+
+        // mantém também no navegador (útil em testes fora do APK)
+        localStorage.setItem("estoque", JSON.stringify(estoque));
+        localStorage.setItem("historico", JSON.stringify(historico));
+        localStorage.setItem("lucroTotal", String(lucroTotal));
+
+        atualizarDashboard();
+        atualizarHistorico();
+      }catch(e){}
+    };
+
+    /* ===== STORAGE (WEB) ===== */
     function salvarDados(){
       localStorage.setItem("estoque", JSON.stringify(estoque));
       localStorage.setItem("historico", JSON.stringify(historico));
       localStorage.setItem("lucroTotal", String(lucroTotal));
+
+      // ✅ salva no TinyDB do Kodular também
+      enviarParaKodular();
     }
 
     function carregarDados(){
@@ -369,11 +404,30 @@
       if(id === "venda") renderVenda();
     }
 
+    /* ===== IMAGEM (COMPRESSÃO pra não estourar tamanho no TinyDB) ===== */
     function carregarImagem(e){
       const file = e.target.files && e.target.files[0];
       if(!file) return;
+
       const r = new FileReader();
-      r.onload = () => imagemTemp = r.result;
+      r.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const max = 480; // tamanho máximo (reduz MUITO o peso)
+          let w = img.width, h = img.height;
+          if(w > h && w > max){ h = Math.round(h * (max / w)); w = max; }
+          else if(h >= w && h > max){ w = Math.round(w * (max / h)); h = max; }
+
+          const c = document.createElement("canvas");
+          c.width = w; c.height = h;
+          const ctx = c.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+
+          // jpeg comprimido
+          imagemTemp = c.toDataURL("image/jpeg", 0.75);
+        };
+        img.src = r.result;
+      };
       r.readAsDataURL(file);
     }
 
@@ -519,6 +573,7 @@
       atualizarHistorico();
     }
 
+    // INIT
     carregarDados();
     mostrar("dashboard");
   </script>
