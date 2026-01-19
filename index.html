@@ -2,7 +2,6 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <!-- ESSENCIAL pra ficar perfeito no celular -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Controle de Vendas</title>
 
@@ -17,12 +16,17 @@
       --text:#111827;
       --border:#e5e7eb;
 
+      /* “tamanho grande” no mobile */
       --radius:18px;
-      --shadow:0 8px 24px rgba(17,24,39,.06);
+      --shadow:0 10px 26px rgba(17,24,39,.08);
+
+      --fs-base:18px;    /* base do texto no celular */
+      --fs-title:20px;   /* header */
+      --fs-btn:15px;     /* botões */
+      --fs-stat:28px;    /* números do dashboard */
     }
 
     *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
-
     html,body{ height:100%; }
 
     body{
@@ -30,503 +34,79 @@
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
       background:var(--bg);
       color:var(--text);
+      font-size: var(--fs-base);
       overflow-x:hidden;
+
+      /* ✅ estrutura para ocupar a tela inteira */
+      display:flex;
+      flex-direction:column;
+      min-height: 100dvh;
     }
 
-    /* Header mais “mobile” */
     header{
       position:sticky;
       top:0;
       z-index:50;
-      padding:14px 14px calc(14px + env(safe-area-inset-top));
-      text-align:center;
-      font-size: clamp(16px, 4.2vw, 20px);
-      font-weight:800;
       background:var(--primary);
       color:#fff;
-      box-shadow:0 6px 18px rgba(37,99,235,.25);
+      text-align:center;
+      font-weight:900;
+      font-size: var(--fs-title);
+      padding: 16px 12px;
+      padding-top: calc(16px + env(safe-area-inset-top));
+      box-shadow:0 8px 22px rgba(37,99,235,.25);
     }
 
-    /* Nav responsivo */
     nav{
       position:sticky;
-      top:56px; /* ajusta com o header */
-      z-index:40;
-      background:rgba(244,246,249,.92);
-      backdrop-filter: blur(8px);
-      padding:10px 12px;
+      top:64px;
+      z-index:45;
+      background:rgba(244,246,249,.94);
+      backdrop-filter: blur(10px);
       border-bottom:1px solid var(--border);
+      padding:12px;
     }
 
     .nav-wrap{
-      max-width: 980px;
-      margin: 0 auto;
+      max-width:980px;
+      margin:0 auto;
       display:grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(2, 1fr); /* ✅ 2x2 no celular */
       gap:10px;
     }
 
     nav button{
-      padding:12px 10px;
+      min-height:52px; /* ✅ botão alto */
+      padding:14px 10px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.18);
+      border:none;
       background:var(--primary);
       color:#fff;
-      font-weight:700;
-      font-size:14px;
-      line-height:1;
-      box-shadow:0 10px 18px rgba(37,99,235,.18);
+      font-weight:800;
+      font-size: var(--fs-btn);
       cursor:pointer;
+      box-shadow:0 10px 20px rgba(37,99,235,.18);
       transition: transform .06s ease, filter .12s ease;
-      user-select:none;
+      touch-action: manipulation;
     }
     nav button:active{ transform: scale(.98); filter:brightness(.95); }
 
+    /* ✅ área principal cresce e ocupa o restante da tela */
     .container{
+      flex:1;
       max-width:980px;
+      width:100%;
       margin:0 auto;
       padding:14px 12px calc(18px + env(safe-area-inset-bottom));
+      display:flex;
+      flex-direction:column;
+      gap:14px;
     }
 
     .card{
       background:var(--card);
       border-radius:var(--radius);
-      padding:16px;
+      padding:18px;
       border:1px solid var(--border);
       box-shadow:var(--shadow);
-      margin-bottom:14px;
     }
-
-    .hidden{ display:none !important; }
-
-    input,select,textarea{
-      width:100%;
-      padding:12px 12px;
-      border-radius:14px;
-      border:1px solid var(--border);
-      margin-bottom:10px;
-      font-size:16px; /* evita zoom automático no iPhone */
-      outline:none;
-      background:#fff;
-    }
-    textarea{ resize:vertical; min-height:92px; }
-
-    button.action{
-      width:100%;
-      padding:12px;
-      border-radius:14px;
-      background:var(--primary);
-      color:#fff;
-      border:none;
-      font-weight:800;
-      font-size:15px;
-      cursor:pointer;
-    }
-    button.action:active{ transform: scale(.99); }
-
-    /* DASHBOARD */
-    .dashboard{
-      display:grid;
-      grid-template-columns:repeat(3, minmax(0, 1fr));
-      gap:12px;
-    }
-
-    .stat{
-      background:#f9fafb;
-      padding:14px;
-      border-radius:16px;
-      border:1px solid var(--border);
-      min-height:78px;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-    }
-
-    .stat small{
-      opacity:.9;
-      font-weight:650;
-      font-size:12px;
-    }
-
-    .stat span{
-      display:block;
-      font-size: clamp(18px, 5.2vw, 26px);
-      font-weight:900;
-      margin-top:6px;
-      letter-spacing:-.2px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .stat:nth-child(1) span{ color:var(--warning); }
-    .stat:nth-child(2) span{ color:var(--primary); }
-    .stat:nth-child(3) span{ color:var(--success); }
-
-    /* VENDA */
-    .produto{
-      display:grid;
-      grid-template-columns: 82px 1fr;
-      gap:12px;
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:12px;
-      margin-bottom:12px;
-      background:#fff;
-    }
-
-    .produto img{
-      width:82px;
-      height:82px;
-      object-fit:cover;
-      border-radius:14px;
-      background:#e5e7eb;
-    }
-
-    .produto strong{ font-size:15px; }
-    .produto small{ opacity:.85; }
-
-    .linha-vazia{
-      text-align:center;
-      padding:18px 10px;
-      color:#6b7280;
-      font-weight:650;
-    }
-
-    /* HISTÓRICO */
-    .historico-item{
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:12px;
-      margin-bottom:12px;
-      background:#fff;
-    }
-
-    .historico-header{
-      display:grid;
-      grid-template-columns: 62px 1fr auto 24px;
-      align-items:center;
-      gap:8px;
-    }
-
-    .historico-header img{
-      width:62px;
-      height:62px;
-      object-fit:cover;
-      border-radius:14px;
-      background:#e5e7eb;
-    }
-
-    .historico-header strong{
-      cursor:pointer;
-      display:block;
-      font-size:14px;
-      line-height:1.2;
-    }
-
-    .data-chip{
-      font-size:12px;
-      font-weight:700;
-      color:#374151;
-      background:#f3f4f6;
-      border:1px solid var(--border);
-      padding:6px 10px;
-      border-radius:999px;
-      cursor:pointer;
-      white-space:nowrap;
-    }
-
-    .seta{
-      font-size:18px;
-      text-align:center;
-      cursor:pointer;
-      user-select:none;
-      color:#374151;
-    }
-
-    .historico-detalhes{
-      margin-top:10px;
-      padding-top:10px;
-      border-top:1px dashed var(--border);
-      display:none;
-      font-size:14px;
-    }
-
-    .historico-detalhes p{ margin:6px 0; }
-
-    /* MOBILE: nav vira 2x2, dashboard vira 1 coluna */
-    @media (max-width: 520px){
-      nav{ top:52px; }
-      .nav-wrap{
-        grid-template-columns: repeat(2, 1fr);
-      }
-      nav button{
-        font-size:13px;
-        padding:12px 8px;
-      }
-      .dashboard{
-        grid-template-columns: 1fr;
-      }
-      .stat{ min-height:72px; }
-      .historico-header{
-        grid-template-columns: 62px 1fr 24px;
-        grid-template-areas:
-          "img title arrow"
-          "img date  arrow";
-      }
-      .historico-header img{ grid-area: img; }
-      .historico-header strong{ grid-area: title; }
-      .data-chip{ grid-area: date; justify-self:start; }
-      .seta{ grid-area: arrow; }
-      /* data embaixo no mobile */
-      .historico-header > div.data-chip{ margin-top:6px; }
-    }
-  </style>
-</head>
-
-<body>
-  <header>💰 Controle de Vendas</header>
-
-  <nav>
-    <div class="nav-wrap">
-      <button onclick="mostrar('dashboard')">Dashboard</button>
-      <button onclick="mostrar('cadastro')">Cadastrar</button>
-      <button onclick="mostrar('venda')">Vender</button>
-      <button onclick="mostrar('historico')">Histórico</button>
-    </div>
-  </nav>
-
-  <div class="container">
-    <!-- DASHBOARD -->
-    <div id="dashboard" class="card">
-      <div class="dashboard">
-        <div class="stat"><small>Produtos em estoque</small><span id="qtd">0</span></div>
-        <div class="stat"><small>Valor em estoque</small><span>R$ <span id="valorEstoque">0.00</span></span></div>
-        <div class="stat"><small>Lucro total</small><span>R$ <span id="lucro">0.00</span></span></div>
-      </div>
-    </div>
-
-    <!-- CADASTRO -->
-    <div id="cadastro" class="card hidden">
-      <input id="nomeProduto" placeholder="Nome do produto">
-      <input id="valorCompra" type="number" inputmode="decimal" placeholder="Valor de compra">
-      <input type="file" accept="image/*" onchange="carregarImagem(event)">
-      <button class="action" onclick="cadastrar()">Cadastrar Produto</button>
-    </div>
-
-    <!-- VENDA -->
-    <div id="venda" class="card hidden"></div>
-
-    <!-- HISTÓRICO -->
-    <div id="historico" class="card hidden">
-      <select id="filtroMes" onchange="atualizarHistorico()">
-        <option value="">Todos os meses</option>
-        <option value="0">Janeiro</option>
-        <option value="1">Fevereiro</option>
-        <option value="2">Março</option>
-        <option value="3">Abril</option>
-        <option value="4">Maio</option>
-        <option value="5">Junho</option>
-        <option value="6">Julho</option>
-        <option value="7">Agosto</option>
-        <option value="8">Setembro</option>
-        <option value="9">Outubro</option>
-        <option value="10">Novembro</option>
-        <option value="11">Dezembro</option>
-      </select>
-
-      <div id="historicoLista"></div>
-    </div>
-  </div>
-
-  <script>
-    let estoque = [];
-    let historico = [];
-    let lucroTotal = 0;
-    let imagemTemp = null;
-
-    /* ===== STORAGE ===== */
-    function salvarDados(){
-      localStorage.setItem("estoque", JSON.stringify(estoque));
-      localStorage.setItem("historico", JSON.stringify(historico));
-      localStorage.setItem("lucroTotal", String(lucroTotal));
-    }
-
-    function carregarDados(){
-      estoque = JSON.parse(localStorage.getItem("estoque")) || [];
-      historico = JSON.parse(localStorage.getItem("historico")) || [];
-      lucroTotal = parseFloat(localStorage.getItem("lucroTotal")) || 0;
-      atualizarDashboard();
-      atualizarHistorico();
-    }
-
-    /* ===== NAV ===== */
-    function mostrar(id){
-      document.querySelectorAll('.card').forEach(e => e.classList.add('hidden'));
-      document.getElementById(id).classList.remove('hidden');
-      if(id === "venda") renderVenda();
-    }
-
-    /* ===== CADASTRO ===== */
-    function carregarImagem(e){
-      const file = e.target.files && e.target.files[0];
-      if(!file) return;
-      const r = new FileReader();
-      r.onload = () => imagemTemp = r.result;
-      r.readAsDataURL(file);
-    }
-
-    function cadastrar(){
-      const nome = document.getElementById("nomeProduto").value.trim();
-      const compra = parseFloat(document.getElementById("valorCompra").value);
-
-      if(!nome || !compra) return alert("Preencha tudo");
-
-      estoque.push({
-        nome,
-        compra: compra,
-        imagem: imagemTemp
-      });
-
-      document.getElementById("nomeProduto").value = "";
-      document.getElementById("valorCompra").value = "";
-      imagemTemp = null;
-
-      salvarDados();
-      atualizarDashboard();
-      alert("Produto cadastrado!");
-    }
-
-    /* ===== VENDA ===== */
-    function renderVenda(){
-      const vendaEl = document.getElementById("venda");
-      if(estoque.length === 0){
-        vendaEl.innerHTML = `<div class="linha-vazia">Nenhum produto no estoque para vender.</div>`;
-        return;
-      }
-
-      vendaEl.innerHTML = "";
-      estoque.forEach((p,i) => {
-        vendaEl.innerHTML += `
-          <div class="produto">
-            <img src="${p.imagem || ''}" alt="">
-            <div>
-              <strong>${p.nome}</strong><br>
-              <small>Custo: R$ ${p.compra.toFixed(2)}</small>
-
-              <input type="date" id="data-${i}">
-              <input type="number" inputmode="decimal" placeholder="Valor de venda" id="venda-${i}">
-              <textarea placeholder="Nota / Detalhes" id="nota-${i}"></textarea>
-
-              <button class="action" style="background:var(--success)" onclick="vender(${i})">Vender</button>
-            </div>
-          </div>
-        `;
-      });
-    }
-
-    function vender(i){
-      const v = parseFloat(document.getElementById(`venda-${i}`).value);
-      if(!v) return alert("Informe o valor de venda");
-
-      const p = estoque[i];
-      const nota = document.getElementById(`nota-${i}`).value;
-      const dataInput = document.getElementById(`data-${i}`).value;
-      const dataVenda = dataInput ? new Date(dataInput + "T12:00") : new Date();
-
-      lucroTotal += (v - p.compra);
-
-      const ts = dataVenda.getTime();
-      historico.push({
-        ...p,
-        venda: v,
-        nota,
-        data: dataVenda.toLocaleDateString("pt-BR"),
-        mes: dataVenda.getMonth(),
-        ts
-      });
-
-      estoque.splice(i,1);
-      salvarDados();
-      renderVenda();
-      atualizarDashboard();
-      atualizarHistorico();
-      alert("Venda registrada!");
-    }
-
-    /* ===== DASHBOARD ===== */
-    function atualizarDashboard(){
-      document.getElementById("qtd").textContent = estoque.length;
-      document.getElementById("valorEstoque").textContent =
-        estoque.reduce((s,p) => s + p.compra, 0).toFixed(2);
-
-      document.getElementById("lucro").textContent = lucroTotal.toFixed(2);
-    }
-
-    /* ===== HISTÓRICO (ORDENADO / SEM BUG DE ÍNDICE) ===== */
-    function atualizarHistorico(){
-      const mes = document.getElementById("filtroMes").value;
-      const listaEl = document.getElementById("historicoLista");
-      listaEl.innerHTML = "";
-
-      const lista = historico
-        .slice()
-        .sort((a,b) => b.ts - a.ts)
-        .filter(h => mes === "" || String(h.mes) === String(mes));
-
-      if(lista.length === 0){
-        listaEl.innerHTML = `<div class="linha-vazia">Nenhuma venda registrada.</div>`;
-        return;
-      }
-
-      lista.forEach(h => {
-        const key = h.ts; // chave única
-        listaEl.innerHTML += `
-          <div class="historico-item">
-            <div class="historico-header">
-              <img src="${h.imagem || ''}" alt="">
-              <strong onclick="toggleDetalhes(${key})">${h.nome}</strong>
-              <div class="data-chip" onclick="toggleDetalhes(${key})">${h.data}</div>
-              <div class="seta" id="seta-${key}" onclick="toggleDetalhes(${key})">▶</div>
-            </div>
-
-            <div class="historico-detalhes" id="detalhes-${key}">
-              <p><b>Compra:</b> R$ ${h.compra.toFixed(2)}</p>
-              <p><b>Venda:</b> R$ ${h.venda.toFixed(2)}</p>
-              <p><b>Lucro:</b> R$ ${(h.venda - h.compra).toFixed(2)}</p>
-              <p><b>Nota:</b> ${h.nota || '-'}</p>
-              <button class="action" style="background:var(--danger)" onclick="excluirVenda(${key})">Excluir</button>
-            </div>
-          </div>
-        `;
-      });
-    }
-
-    function toggleDetalhes(key){
-      const d = document.getElementById(`detalhes-${key}`);
-      const s = document.getElementById(`seta-${key}`);
-      const aberto = d.style.display === "block";
-      d.style.display = aberto ? "none" : "block";
-      s.textContent = aberto ? "▶" : "▼";
-    }
-
-    function excluirVenda(key){
-      if(!confirm("Excluir esta venda?")) return;
-
-      const idx = historico.findIndex(h => h.ts === key);
-      if(idx === -1) return;
-
-      const h = historico[idx];
-      lucroTotal -= (h.venda - h.compra);
-
-      historico.splice(idx,1);
-      salvarDados();
-      atualizarDashboard();
-      atualizarHistorico();
-    }
-
-    /* INIT */
-    carregarDados();
-  </script>
-</body>
-</html>
