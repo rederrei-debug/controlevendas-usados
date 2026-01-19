@@ -62,3 +62,465 @@
       backdrop-filter: blur(10px);
       border-bottom:1px solid var(--border);
     }
+
+    .nav-wrap{
+      max-width:980px;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns: repeat(2, 1fr); /* 2x2 no celular */
+      gap:10px;
+    }
+
+    nav button{
+      min-height:54px;
+      border:none;
+      border-radius:999px;
+      background:var(--primary);
+      color:#fff;
+      font-weight:800;
+      font-size:var(--fs-btn);
+      cursor:pointer;
+      box-shadow:0 10px 18px rgba(37,99,235,.18);
+      transition: transform .06s ease, filter .12s ease;
+    }
+    nav button:active{ transform:scale(.98); filter:brightness(.95); }
+
+    main{
+      flex:1;
+      max-width:980px;
+      width:100%;
+      margin:0 auto;
+      padding:14px 12px calc(18px + env(safe-area-inset-bottom));
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:0 10px 26px rgba(17,24,39,.08);
+    }
+
+    .screen{ flex:1; }
+    .hidden{ display:none !important; }
+
+    input,select,textarea{
+      width:100%;
+      padding:14px 14px;
+      border-radius:16px;
+      border:1px solid var(--border);
+      margin-bottom:12px;
+      font-size:18px;
+      outline:none;
+      background:#fff;
+    }
+    textarea{ resize:vertical; min-height:120px; }
+
+    button.action{
+      width:100%;
+      min-height:56px;
+      border:none;
+      border-radius:16px;
+      background:var(--primary);
+      color:#fff;
+      font-weight:900;
+      font-size:16px;
+      cursor:pointer;
+    }
+
+    /* DASHBOARD – cards grandes */
+    .dashboard{
+      display:grid;
+      grid-template-columns:1fr; /* grande no celular */
+      gap:14px;
+    }
+
+    .stat{
+      background:#f9fafb;
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:18px;
+      min-height:120px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+
+    .stat .label{
+      font-size:14px;
+      font-weight:800;
+      opacity:.85;
+    }
+
+    .stat .value{
+      margin-top:10px;
+      font-size:var(--fs-stat);
+      font-weight:1000;
+      line-height:1;
+      letter-spacing:-.4px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .stat:nth-child(1) .value{ color:var(--warning); }
+    .stat:nth-child(2) .value{ color:var(--primary); }
+    .stat:nth-child(3) .value{ color:var(--success); }
+
+    /* VENDA */
+    .produto{
+      display:grid;
+      grid-template-columns:96px 1fr;
+      gap:14px;
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:14px;
+      margin-bottom:14px;
+      background:#fff;
+    }
+
+    .produto img{
+      width:96px;
+      height:96px;
+      object-fit:cover;
+      border-radius:16px;
+      background:#e5e7eb;
+    }
+
+    .produto strong{ font-size:16px; font-weight:900; }
+    .produto small{ display:block; margin-top:6px; opacity:.85; }
+
+    .vazio{
+      text-align:center;
+      padding:28px 10px;
+      color:#6b7280;
+      font-weight:800;
+    }
+
+    /* HISTÓRICO */
+    .historico-item{
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:14px;
+      margin-bottom:14px;
+      background:#fff;
+    }
+
+    .historico-header{
+      display:grid;
+      grid-template-columns:72px 1fr 24px;
+      grid-template-areas:
+        "img title arrow"
+        "img date  arrow";
+      gap:10px;
+      align-items:center;
+    }
+
+    .historico-header img{
+      grid-area:img;
+      width:72px;
+      height:72px;
+      object-fit:cover;
+      border-radius:16px;
+      background:#e5e7eb;
+    }
+
+    .historico-header strong{
+      grid-area:title;
+      font-size:16px;
+      font-weight:900;
+      cursor:pointer;
+      line-height:1.15;
+    }
+
+    .data-chip{
+      grid-area:date;
+      justify-self:start;
+      font-size:13px;
+      font-weight:800;
+      background:#f3f4f6;
+      border:1px solid var(--border);
+      padding:8px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+
+    .seta{
+      grid-area:arrow;
+      font-size:20px;
+      text-align:center;
+      cursor:pointer;
+      user-select:none;
+      color:#374151;
+    }
+
+    .historico-detalhes{
+      margin-top:12px;
+      padding-top:12px;
+      border-top:1px dashed var(--border);
+      display:none;
+      font-size:16px;
+    }
+    .historico-detalhes p{ margin:8px 0; }
+
+    /* DESKTOP: mostra 4 botões em linha e dashboard em 3 colunas */
+    @media (min-width: 900px){
+      :root{
+        --fs-base:16px;
+        --fs-title:22px;
+        --fs-btn:14px;
+        --fs-stat:28px;
+      }
+      .nav-wrap{ grid-template-columns: repeat(4, 1fr); }
+      .dashboard{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+      nav{ top:72px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>💰 Controle de Vendas</header>
+
+  <nav>
+    <div class="nav-wrap">
+      <button type="button" onclick="mostrar('dashboard')">Dashboard</button>
+      <button type="button" onclick="mostrar('cadastro')">Cadastrar</button>
+      <button type="button" onclick="mostrar('venda')">Vender</button>
+      <button type="button" onclick="mostrar('historico')">Histórico</button>
+    </div>
+  </nav>
+
+  <main>
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="card screen">
+      <div class="dashboard">
+        <div class="stat">
+          <div class="label">Produtos em estoque</div>
+          <div class="value" id="qtd">0</div>
+        </div>
+
+        <div class="stat">
+          <div class="label">Valor em estoque</div>
+          <div class="value">R$ <span id="valorEstoque">0.00</span></div>
+        </div>
+
+        <div class="stat">
+          <div class="label">Lucro total</div>
+          <div class="value">R$ <span id="lucro">0.00</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CADASTRO -->
+    <section id="cadastro" class="card screen hidden">
+      <input id="nomeProduto" placeholder="Nome do produto" />
+      <input id="valorCompra" type="number" inputmode="decimal" placeholder="Valor de compra" />
+      <input type="file" accept="image/*" onchange="carregarImagem(event)" />
+      <button class="action" type="button" onclick="cadastrar()">Cadastrar Produto</button>
+    </section>
+
+    <!-- VENDA -->
+    <section id="venda" class="card screen hidden"></section>
+
+    <!-- HISTÓRICO -->
+    <section id="historico" class="card screen hidden">
+      <select id="filtroMes" onchange="atualizarHistorico()">
+        <option value="">Todos os meses</option>
+        <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+        <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+        <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+        <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+      </select>
+
+      <div id="historicoLista"></div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    let estoque = [];
+    let historico = [];
+    let lucroTotal = 0;
+    let imagemTemp = null;
+
+    function salvarDados(){
+      localStorage.setItem("estoque", JSON.stringify(estoque));
+      localStorage.setItem("historico", JSON.stringify(historico));
+      localStorage.setItem("lucroTotal", String(lucroTotal));
+    }
+
+    function carregarDados(){
+      estoque = JSON.parse(localStorage.getItem("estoque")) || [];
+      historico = JSON.parse(localStorage.getItem("historico")) || [];
+      lucroTotal = parseFloat(localStorage.getItem("lucroTotal")) || 0;
+
+      atualizarDashboard();
+      atualizarHistorico();
+    }
+
+    function mostrar(id){
+      document.querySelectorAll(".screen").forEach(s => s.classList.add("hidden"));
+      $(id).classList.remove("hidden");
+      if(id === "venda") renderVenda();
+    }
+
+    function carregarImagem(e){
+      const file = e.target.files && e.target.files[0];
+      if(!file) return;
+      const r = new FileReader();
+      r.onload = () => imagemTemp = r.result;
+      r.readAsDataURL(file);
+    }
+
+    function cadastrar(){
+      const nome = $("nomeProduto").value.trim();
+      const compra = parseFloat($("valorCompra").value);
+
+      if(!nome || !compra) return alert("Preencha tudo");
+
+      estoque.push({ nome, compra, imagem: imagemTemp });
+
+      $("nomeProduto").value = "";
+      $("valorCompra").value = "";
+      imagemTemp = null;
+
+      salvarDados();
+      atualizarDashboard();
+      alert("Produto cadastrado!");
+    }
+
+    function renderVenda(){
+      const vendaEl = $("venda");
+
+      if(estoque.length === 0){
+        vendaEl.innerHTML = `<div class="vazio">Nenhum produto no estoque para vender.</div>`;
+        return;
+      }
+
+      vendaEl.innerHTML = "";
+
+      estoque.forEach((p,i) => {
+        vendaEl.innerHTML += `
+          <div class="produto">
+            <img src="${p.imagem || ''}" alt="">
+            <div>
+              <strong>${p.nome}</strong>
+              <small>Custo: R$ ${p.compra.toFixed(2)}</small>
+
+              <input type="date" id="data-${i}">
+              <input type="number" inputmode="decimal" placeholder="Valor de venda" id="venda-${i}">
+              <textarea placeholder="Nota / Detalhes" id="nota-${i}"></textarea>
+
+              <button class="action" type="button" style="background:var(--success)" onclick="vender(${i})">Vender</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function vender(i){
+      const v = parseFloat(document.getElementById(`venda-${i}`).value);
+      if(!v) return alert("Informe o valor de venda");
+
+      const p = estoque[i];
+      const nota = document.getElementById(`nota-${i}`).value;
+      const dataInput = document.getElementById(`data-${i}`).value;
+      const dataVenda = dataInput ? new Date(dataInput + "T12:00") : new Date();
+
+      lucroTotal += (v - p.compra);
+
+      const ts = dataVenda.getTime();
+      historico.push({
+        ...p,
+        venda: v,
+        nota,
+        data: dataVenda.toLocaleDateString("pt-BR"),
+        mes: dataVenda.getMonth(),
+        ts
+      });
+
+      estoque.splice(i, 1);
+      salvarDados();
+      renderVenda();
+      atualizarDashboard();
+      atualizarHistorico();
+      alert("Venda registrada!");
+    }
+
+    function atualizarDashboard(){
+      $("qtd").textContent = estoque.length;
+      $("valorEstoque").textContent = estoque.reduce((s,p) => s + p.compra, 0).toFixed(2);
+      $("lucro").textContent = lucroTotal.toFixed(2);
+    }
+
+    function atualizarHistorico(){
+      const mes = $("filtroMes").value;
+      const listaEl = $("historicoLista");
+      listaEl.innerHTML = "";
+
+      const lista = historico
+        .slice()
+        .sort((a,b) => b.ts - a.ts)
+        .filter(h => mes === "" || String(h.mes) === String(mes));
+
+      if(lista.length === 0){
+        listaEl.innerHTML = `<div class="vazio">Nenhuma venda registrada.</div>`;
+        return;
+      }
+
+      lista.forEach(h => {
+        const key = h.ts;
+        listaEl.innerHTML += `
+          <div class="historico-item">
+            <div class="historico-header">
+              <img src="${h.imagem || ''}" alt="">
+              <strong onclick="toggleDetalhes(${key})">${h.nome}</strong>
+              <div class="data-chip" onclick="toggleDetalhes(${key})">${h.data}</div>
+              <div class="seta" id="seta-${key}" onclick="toggleDetalhes(${key})">▶</div>
+            </div>
+
+            <div class="historico-detalhes" id="detalhes-${key}">
+              <p><b>Compra:</b> R$ ${h.compra.toFixed(2)}</p>
+              <p><b>Venda:</b> R$ ${h.venda.toFixed(2)}</p>
+              <p><b>Lucro:</b> R$ ${(h.venda - h.compra).toFixed(2)}</p>
+              <p><b>Nota:</b> ${h.nota || '-'}</p>
+              <button class="action" type="button" style="background:var(--danger)" onclick="excluirVenda(${key})">Excluir</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function toggleDetalhes(key){
+      const d = document.getElementById(`detalhes-${key}`);
+      const s = document.getElementById(`seta-${key}`);
+      const aberto = d.style.display === "block";
+      d.style.display = aberto ? "none" : "block";
+      s.textContent = aberto ? "▶" : "▼";
+    }
+
+    function excluirVenda(key){
+      if(!confirm("Excluir esta venda?")) return;
+
+      const idx = historico.findIndex(h => h.ts === key);
+      if(idx === -1) return;
+
+      const h = historico[idx];
+      lucroTotal -= (h.venda - h.compra);
+
+      historico.splice(idx, 1);
+      salvarDados();
+      atualizarDashboard();
+      atualizarHistorico();
+    }
+
+    carregarDados();
+    mostrar("dashboard");
+  </script>
+</body>
+</html>
