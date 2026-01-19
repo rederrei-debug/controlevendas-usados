@@ -1,246 +1,64 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Controle de Vendas</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Controle de Vendas</title>
 
-<style>
-:root{
-  --bg:#f4f6f9;
-  --card:#ffffff;
-  --primary:#2563eb;
-  --success:#16a34a;
-  --danger:#dc2626;
-  --warning:#f59e0b;
-  --text:#111827;
-  --border:#e5e7eb;
-}
+  <style>
+    :root{
+      --bg:#f4f6f9;
+      --card:#ffffff;
+      --primary:#2563eb;
+      --success:#16a34a;
+      --danger:#dc2626;
+      --warning:#f59e0b;
+      --text:#111827;
+      --border:#e5e7eb;
 
-*{box-sizing:border-box}
+      /* tamanhos “grandes” para celular */
+      --fs-base:18px;
+      --fs-title:22px;
+      --fs-btn:16px;
+      --fs-stat:36px;
+      --radius:18px;
+    }
 
-body{
-  margin:0;
-  font-family:Segoe UI,Arial,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  -webkit-text-size-adjust:100%;
-}
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    html,body{ height:100%; }
 
-header{
-  padding:18px 12px;
-  text-align:center;
-  font-size:22px;
-  font-weight:bold;
-  background:var(--primary);
-  color:#fff;
-}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      font-size:var(--fs-base);
+      display:flex;
+      flex-direction:column;
+      min-height:100dvh;
+      overflow-x:hidden;
+    }
 
-nav{
-  display:flex;
-  gap:10px;
-  padding:14px 12px;
-  max-width:900px;
-  margin:auto;
-}
+    header{
+      background:var(--primary);
+      color:#fff;
+      text-align:center;
+      font-weight:900;
+      font-size:var(--fs-title);
+      padding:16px 12px;
+      padding-top:calc(16px + env(safe-area-inset-top));
+      box-shadow:0 8px 22px rgba(37,99,235,.25);
+      position:sticky;
+      top:0;
+      z-index:50;
+    }
 
-nav button{
-  flex:1;
-  padding:14px 10px;
-  border-radius:20px;
-  border:none;
-  background:var(--primary);
-  color:#fff;
-  font-weight:700;
-  font-size:15px;
-}
-
-.container{
-  max-width:900px;
-  margin:auto;
-  padding:14px 12px calc(16px + env(safe-area-inset-bottom));
-}
-
-.card{
-  background:var(--card);
-  border-radius:20px;
-  padding:18px;
-  border:1px solid var(--border);
-  margin-bottom:14px;
-}
-
-.hidden{display:none}
-
-input,select,textarea{
-  width:100%;
-  padding:14px 12px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  margin-bottom:12px;
-  font-size:16px; /* evita zoom no iPhone */
-}
-
-textarea{resize:vertical}
-
-button.action{
-  width:100%;
-  padding:14px 12px;
-  border-radius:14px;
-  background:var(--primary);
-  color:#fff;
-  border:none;
-  font-weight:bold;
-  font-size:16px;
-}
-
-/* DASHBOARD */
-.dashboard{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-  gap:15px;
-}
-
-.stat{
-  background:#f9fafb;
-  padding:18px;
-  border-radius:18px;
-  border:1px solid var(--border);
-}
-
-.stat span{
-  display:block;
-  font-size:28px;
-  font-weight:bold;
-  margin-top:8px;
-}
-
-.stat:nth-child(1) span{color:var(--warning)}
-.stat:nth-child(2) span{color:var(--primary)}
-.stat:nth-child(3) span{color:var(--success)}
-
-/* VENDA */
-.produto{
-  display:grid;
-  grid-template-columns:90px 1fr;
-  gap:15px;
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:15px;
-  margin-bottom:15px;
-  background:#fff;
-}
-
-.produto img{
-  width:90px;
-  height:90px;
-  object-fit:cover;
-  border-radius:14px;
-  background:#e5e7eb;
-}
-
-/* HISTÓRICO */
-.historico-item{
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:12px;
-  margin-bottom:12px;
-  background:#fff;
-}
-
-.historico-header{
-  display:grid;
-  grid-template-columns:70px 1fr 90px 24px;
-  align-items:center;
-  gap:8px;
-}
-
-.historico-header img{
-  width:70px;
-  height:70px;
-  object-fit:cover;
-  border-radius:14px;
-  background:#e5e7eb;
-}
-
-.seta{
-  font-size:18px;
-  text-align:center;
-  cursor:pointer;
-  user-select:none;
-}
-
-.historico-detalhes{
-  margin-top:10px;
-  padding-top:10px;
-  border-top:1px dashed var(--border);
-  display:none;
-}
-
-/* ===== AJUSTES MOBILE (DEIXAR MAIOR) ===== */
-@media (max-width: 520px){
-  header{
-    font-size:22px;
-    padding:18px 12px;
-  }
-
-  nav{
-    flex-wrap:wrap;     /* menu em 2 linhas */
-    gap:10px;
-    padding:14px 12px;
-  }
-  nav button{
-    flex:1 1 calc(50% - 10px); /* 2 por linha */
-    padding:14px 10px;
-    font-size:15px;
-    border-radius:18px;
-  }
-
-  .card{
-    padding:18px;
-    border-radius:18px;
-  }
-
-  /* Dashboard 1 coluna = fica grande e ocupa a tela */
-  .dashboard{
-    grid-template-columns:1fr;
-    gap:12px;
-  }
-  .stat{
-    padding:18px;
-  }
-  .stat span{
-    font-size:34px;
-  }
-
-  /* Venda mais confortável */
-  .produto{
-    grid-template-columns:78px 1fr;
-    gap:12px;
-    padding:14px;
-  }
-  .produto img{
-    width:78px;
-    height:78px;
-  }
-
-  /* Histórico encaixa melhor */
-  .historico-header{
-    grid-template-columns:62px 1fr 24px;
-    grid-template-areas:
-      "img title arrow"
-      "img date  arrow";
-  }
-  .historico-header img{ grid-area:img; width:62px; height:62px; }
-  .historico-header strong{ grid-area:title; }
-  .historico-header > div{ grid-area:date; font-size:13px; }
-  .seta{ grid-area:arrow; }
-}
-</style>
-</head>
-
-<body>
-
-<header>💰 Controle de Vendas</header>
-
-<nav>
-  <button onclick="mostrar('dashboard')">Dashboard</but
+    nav{
+      position:sticky;
+      top:64px;
+      z-index:40;
+      padding:12px;
+      background:rgba(244,246,249,.95);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--border);
+    }
