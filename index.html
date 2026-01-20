@@ -1,462 +1,553 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Controle de Vendas</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <title>Controle de Vendas</title>
 
-<style>
-:root{
-  --bg:#f4f6f9;
-  --card:#ffffff;
-  --primary:#2563eb;
-  --success:#16a34a;
-  --danger:#dc2626;
-  --warning:#f59e0b;
-  --text:#111827;
-  --border:#e5e7eb;
-}
+  <style>
+    :root{
+      --bg:#f4f6f9;
+      --card:#ffffff;
+      --primary:#2563eb;
+      --success:#16a34a;
+      --danger:#dc2626;
+      --warning:#f59e0b;
+      --text:#111827;
+      --border:#e5e7eb;
+    }
 
-*{box-sizing:border-box}
-html,body{height:100%}
+    *{box-sizing:border-box}
 
-body{
-  margin:0;
-  font-family:Segoe UI,Arial,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
-}
+    body{
+      margin:0;
+      font-family:Segoe UI,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      min-height:100vh;
+    }
 
-header{
-  padding:20px;
-  text-align:center;
-  font-size:22px;
-  font-weight:bold;
-  background:var(--primary);
-  color:#fff;
-}
+    header{
+      padding:20px;
+      text-align:center;
+      font-size:22px;
+      font-weight:bold;
+      background:var(--primary);
+      color:#fff;
+      padding-top:calc(20px + env(safe-area-inset-top));
+    }
 
-/* NAV */
-nav{
-  display:flex;
-  gap:10px;
-  padding:15px;
-  max-width:900px;
-  margin:auto;
-}
+    nav{
+      display:flex;
+      gap:10px;
+      padding:15px;
+      max-width:900px;
+      margin:auto;
+    }
 
-nav button{
-  flex:1;
-  padding:12px;
-  border-radius:999px;
-  border:none;
-  background:var(--primary);
-  color:#fff;
-  font-weight:600;
-  min-height:44px;
-  transition:transform .06s ease, filter .2s ease, box-shadow .2s ease;
-}
+    nav button{
+      flex:1;
+      padding:12px;
+      border-radius:20px;
+      border:none;
+      background:var(--primary);
+      color:#fff;
+      font-weight:600;
+      cursor:pointer;
+      transition:transform .06s ease;
+    }
+    nav button:active{ transform:scale(.99); }
 
-nav button:active{ transform:scale(.98); }
-nav button.active{
-  filter:brightness(.92);
-  box-shadow:0 10px 22px rgba(37,99,235,.22);
-}
+    .container{
+      max-width:900px;
+      margin:auto;
+      padding:15px;
+      padding-bottom:calc(15px + env(safe-area-inset-bottom));
+    }
 
-.container{
-  max-width:900px;
-  margin:auto;
-  padding:15px;
-}
+    .card{
+      background:var(--card);
+      border-radius:20px;
+      padding:20px;
+      border:1px solid var(--border);
+      margin-bottom:15px;
+    }
 
-.card{
-  background:var(--card);
-  border-radius:20px;
-  padding:20px;
-  border:1px solid var(--border);
-  margin-bottom:15px;
-}
+    .hidden{display:none}
 
-.hidden{display:none}
+    input,select,textarea{
+      width:100%;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      margin-bottom:10px;
+      font-size:16px;
+    }
 
-/* inputs confortáveis no mobile */
-input,select,textarea{
-  width:100%;
-  padding:12px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  margin-bottom:10px;
-  font-size:16px; /* evita zoom no iOS e melhora toque */
-}
+    textarea{resize:vertical}
 
-textarea{resize:vertical}
+    button.action{
+      width:100%;
+      padding:12px;
+      border-radius:14px;
+      background:var(--primary);
+      color:#fff;
+      border:none;
+      font-weight:bold;
+      cursor:pointer;
+    }
+    button.action:disabled{
+      opacity:.65;
+      cursor:not-allowed;
+    }
 
-button.action{
-  width:100%;
-  padding:12px;
-  border-radius:14px;
-  background:var(--primary);
-  color:#fff;
-  border:none;
-  font-weight:bold;
-  min-height:44px;
-}
+    /* DASHBOARD */
+    .dashboard{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:15px;
+    }
 
-/* DASHBOARD */
-.dashboard{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-  gap:15px;
-}
+    .stat{
+      background:#f9fafb;
+      padding:20px;
+      border-radius:18px;
+      border:1px solid var(--border);
+    }
 
-.stat{
-  background:#f9fafb;
-  padding:20px;
-  border-radius:18px;
-  border:1px solid var(--border);
-}
+    .stat span{
+      display:block;
+      font-size:26px;
+      font-weight:bold;
+      margin-top:8px;
+    }
 
-.stat span{
-  display:block;
-  font-size:28px;
-  font-weight:bold;
-  margin-top:8px;
-}
+    .stat:nth-child(1) span{color:var(--warning)}
+    .stat:nth-child(2) span{color:var(--primary)}
+    .stat:nth-child(3) span{color:var(--success)}
 
-.stat:nth-child(1) span{color:var(--warning)}
-.stat:nth-child(2) span{color:var(--primary)}
-.stat:nth-child(3) span{color:var(--success)}
+    /* VENDA */
+    .produto{
+      display:grid;
+      grid-template-columns:90px 1fr;
+      gap:15px;
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:15px;
+      margin-bottom:15px;
+      background:var(--card);
+    }
 
-/* VENDA */
-.produto{
-  display:grid;
-  grid-template-columns:90px 1fr;
-  gap:15px;
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:15px;
-  margin-bottom:15px;
-}
+    .produto img{
+      width:90px;
+      height:90px;
+      object-fit:cover;
+      border-radius:14px;
+      background:#e5e7eb;
+    }
 
-.produto img{
-  width:90px;
-  height:90px;
-  object-fit:cover;
-  border-radius:14px;
-  background:#e5e7eb;
-}
+    /* HISTÓRICO */
+    .historico-item{
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:12px;
+      margin-bottom:12px;
+      background:var(--card);
+    }
 
-/* HISTÓRICO */
-.historico-item{
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:12px;
-  margin-bottom:12px;
-}
+    .historico-header{
+      display:grid;
+      grid-template-columns:70px 1fr 70px 24px;
+      align-items:center;
+      gap:6px;
+    }
 
-.historico-header{
-  display:grid;
-  grid-template-columns:70px 1fr 80px 24px;
-  align-items:center;
-  gap:8px;
-}
+    .historico-header img{
+      width:70px;
+      height:70px;
+      object-fit:cover;
+      border-radius:14px;
+      background:#e5e7eb;
+    }
 
-.historico-header img{
-  width:70px;
-  height:70px;
-  object-fit:cover;
-  border-radius:14px;
-}
+    .seta{
+      font-size:18px;
+      text-align:center;
+      cursor:pointer;
+      user-select:none;
+    }
 
-.seta{
-  font-size:18px;
-  text-align:center;
-  cursor:pointer;
-}
+    .historico-detalhes{
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px dashed var(--border);
+      display:none;
+    }
 
-.historico-detalhes{
-  margin-top:10px;
-  padding-top:10px;
-  border-top:1px dashed var(--border);
-  display:none;
-}
-
-/* ==========================
-   MOBILE: ficar “de celular”
-   ========================== */
-@media (max-width: 520px){
-  header{ padding:16px; font-size:20px; }
-
-  nav{
-    padding:12px;
-    gap:12px;
-    flex-wrap:wrap; /* vira 2 linhas */
-  }
-
-  nav button{
-    flex:1 1 calc(50% - 12px); /* 2 colunas */
-    padding:14px;
-    font-size:14px;
-  }
-
-  .container{ padding:12px; }
-  .card{ padding:16px; border-radius:18px; }
-
-  /* dashboard em 1 coluna no celular */
-  .dashboard{
-    grid-template-columns:1fr;
-    gap:12px;
-  }
-  .stat{ padding:16px; }
-  .stat span{ font-size:32px; }
-
-  .historico-header{
-    grid-template-columns:70px 1fr 60px 24px;
-  }
-}
-
-/* muito pequeno: produto vira “empilhado” pra caber inputs */
-@media (max-width: 420px){
-  .produto{
-    grid-template-columns:1fr;
-  }
-  .produto img{
-    width:100%;
-    height:180px;
-  }
-}
-</style>
+    /* MOBILE: deixa com cara de app */
+    @media (max-width: 600px){
+      nav{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:12px;
+        padding:14px;
+      }
+      nav button{
+        padding:16px 12px;
+        border-radius:26px;
+        font-size:16px;
+      }
+      header{ font-size:20px; padding:16px 12px; padding-top:calc(16px + env(safe-area-inset-top)); }
+      .container{ padding:14px; }
+      .card{ padding:16px; border-radius:22px; }
+      .stat span{ font-size:30px; }
+    }
+  </style>
 </head>
 
 <body>
+  <header>💰 Controle de Vendas</header>
 
-<header>💰 Controle de Vendas</header>
+  <nav>
+    <button onclick="mostrar('dashboard')">Dashboard</button>
+    <button onclick="mostrar('cadastro')">Cadastrar</button>
+    <button onclick="mostrar('venda')">Vender</button>
+    <button onclick="mostrar('historico')">Histórico</button>
+  </nav>
 
-<nav>
-  <button class="nav-btn active" onclick="mostrar('dashboard', this)">Dashboard</button>
-  <button class="nav-btn" onclick="mostrar('cadastro', this)">Cadastrar</button>
-  <button class="nav-btn" onclick="mostrar('venda', this)">Vender</button>
-  <button class="nav-btn" onclick="mostrar('historico', this)">Histórico</button>
-</nav>
+  <div class="container">
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="card">
+      <div class="dashboard">
+        <div class="stat">Produtos em estoque<span id="qtd">0</span></div>
+        <div class="stat">Valor em estoque<span>R$ <span id="valorEstoque">0.00</span></span></div>
+        <div class="stat">Lucro total<span>R$ <span id="lucro">0.00</span></span></div>
+      </div>
+    </div>
 
-<div class="container">
+    <!-- CADASTRO -->
+    <div id="cadastro" class="card hidden">
+      <input id="nomeProduto" placeholder="Nome do produto">
+      <input id="valorCompra" type="number" placeholder="Valor de compra">
+      <input id="imgInput" type="file" accept="image/*" onchange="carregarImagem(event)">
+      <button id="btnCadastrar" class="action" onclick="cadastrar()">Cadastrar Produto</button>
+    </div>
 
-<!-- DASHBOARD -->
-<div id="dashboard" class="card">
-  <div class="dashboard">
-    <div class="stat">Produtos em estoque<span id="qtd">0</span></div>
-    <div class="stat">Valor em estoque<span>R$ <span id="valorEstoque">0.00</span></span></div>
-    <div class="stat">Lucro total<span>R$ <span id="lucro">0.00</span></span></div>
+    <!-- VENDA -->
+    <div id="venda" class="hidden"></div>
+
+    <!-- HISTÓRICO -->
+    <div id="historico" class="card hidden">
+      <select id="filtroMes" onchange="atualizarHistorico()">
+        <option value="">Todos os meses</option>
+        <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+        <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+        <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+        <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+      </select>
+
+      <div id="historicoLista"></div>
+    </div>
   </div>
-</div>
-
-<!-- CADASTRO -->
-<div id="cadastro" class="card hidden">
-  <input id="nomeProduto" placeholder="Nome do produto">
-  <input id="valorCompra" type="number" placeholder="Valor de compra">
-  <input type="file" accept="image/*" onchange="carregarImagem(event)">
-  <button class="action" onclick="cadastrar()">Cadastrar Produto</button>
-</div>
-
-<!-- VENDA (agora é card, pra preencher bonito) -->
-<div id="venda" class="card hidden"></div>
-
-<!-- HISTÓRICO -->
-<div id="historico" class="card hidden">
-
-<select id="filtroMes" onchange="atualizarHistorico()">
-  <option value="">Todos os meses</option>
-  <option value="0">Janeiro</option>
-  <option value="1">Fevereiro</option>
-  <option value="2">Março</option>
-  <option value="3">Abril</option>
-  <option value="4">Maio</option>
-  <option value="5">Junho</option>
-  <option value="6">Julho</option>
-  <option value="7">Agosto</option>
-  <option value="8">Setembro</option>
-  <option value="9">Outubro</option>
-  <option value="10">Novembro</option>
-  <option value="11">Dezembro</option>
-</select>
-
-<div id="historicoLista"></div>
-</div>
-
-</div>
 
 <script>
-let estoque=[];
-let historico=[];
-let lucroTotal=0;
-let imagemTemp=null;
+  // ====== ESTADO ======
+  let estoque = [];
+  let historico = [];
+  let lucroTotal = 0;
+  let imagemTemp = null;
 
-/* ===== STORAGE ===== */
-function salvarDados(){
-  localStorage.setItem("estoque",JSON.stringify(estoque));
-  localStorage.setItem("historico",JSON.stringify(historico));
-  localStorage.setItem("lucroTotal",lucroTotal);
-}
+  // ====== TinyDB bridge (Kodular) ======
+  // A ideia: sempre que salvar, mandamos um B64 do estado para o Kodular via WebViewString
+  // Kodular salva isso no TinyDB (tag: dados_b64) e depois, ao abrir, injeta de volta chamando window.loadFromKodularB64(b64)
 
-function carregarDados(){
-  estoque=JSON.parse(localStorage.getItem("estoque"))||[];
-  historico=JSON.parse(localStorage.getItem("historico"))||[];
-  lucroTotal=parseFloat(localStorage.getItem("lucroTotal"))||0;
-  atualizarDashboard();
-  atualizarHistorico();
-}
+  let saveTimer = null;
+  let lastSentB64 = "";
 
-/* ===== NAV + botão ativo ===== */
-function mostrar(id, btn){
-  document.querySelectorAll('.card').forEach(e=>e.classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
-
-  // ativo
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-
-  if(id==="venda") renderVenda();
-}
-
-/* ===== CADASTRO ===== */
-function carregarImagem(e){
-  const r=new FileReader();
-  r.onload=()=>imagemTemp=r.result;
-  r.readAsDataURL(e.target.files[0]);
-}
-
-function cadastrar(){
-  if(!nomeProduto.value||!valorCompra.value) return alert("Preencha tudo");
-  estoque.push({nome:nomeProduto.value,compra:+valorCompra.value,imagem:imagemTemp});
-  nomeProduto.value="";
-  valorCompra.value="";
-  imagemTemp=null;
-  salvarDados();
-  atualizarDashboard();
-}
-
-/* ===== VENDA ===== */
-function renderVenda(){
-  venda.innerHTML="";
-  if(estoque.length === 0){
-    venda.innerHTML = "<div style='opacity:.7'>Nenhum produto em estoque para vender.</div>";
-    return;
+  function encodeB64Unicode(str){
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+  function decodeB64Unicode(b64){
+    return decodeURIComponent(escape(atob(b64)));
   }
 
-  estoque.forEach((p,i)=>{
-    venda.innerHTML+=`
-    <div class="produto">
-      <img src="${p.imagem||''}">
-      <div>
-        <strong>${p.nome}</strong><br>
-        <small>Custo: R$ ${p.compra.toFixed(2)}</small>
-        <input type="date" id="data-${i}">
-        <input type="number" placeholder="Valor de venda" id="venda-${i}">
-        <textarea placeholder="Nota / Detalhes" id="nota-${i}"></textarea>
-        <button class="action" style="background:var(--success)" onclick="vender(${i})">Vender</button>
-      </div>
-    </div>`;
-  });
-}
-
-function vender(i){
-  const v=parseFloat(document.getElementById(`venda-${i}`).value);
-  if(!v) return alert("Informe o valor");
-
-  const p=estoque[i];
-  const nota=document.getElementById(`nota-${i}`).value;
-  const dataInput=document.getElementById(`data-${i}`).value;
-  const dataVenda=dataInput?new Date(dataInput+"T12:00"):new Date();
-
-  lucroTotal+=v-p.compra;
-
-  historico.push({
-    ...p,
-    venda:v,
-    nota,
-    data:dataVenda.toLocaleDateString("pt-BR"),
-    mes:dataVenda.getMonth(),
-    ts:dataVenda.getTime()
-  });
-
-  estoque.splice(i,1);
-  salvarDados();
-  renderVenda();
-  atualizarDashboard();
-  atualizarHistorico();
-}
-
-/* ===== DASHBOARD ===== */
-function atualizarDashboard(){
-  qtd.textContent=estoque.length;
-  valorEstoque.textContent=estoque.reduce((s,p)=>s+p.compra,0).toFixed(2);
-  lucro.textContent=lucroTotal.toFixed(2);
-}
-
-/* ===== HISTÓRICO ===== */
-function atualizarHistorico(){
-  const mes=filtroMes.value;
-  historicoLista.innerHTML="";
-
-  const lista = historico
-    .slice()
-    .sort((a,b)=>b.ts-a.ts)
-    .filter(h=>mes===""||h.mes==mes);
-
-  if(lista.length === 0){
-    historicoLista.innerHTML = "<div style='opacity:.7'>Nenhuma venda registrada.</div>";
-    return;
+  function getStateObj(){
+    return { estoque, historico, lucroTotal };
   }
 
-  lista.forEach((h,i)=>{
-    historicoLista.innerHTML+=`
-    <div class="historico-item">
-      <div class="historico-header">
-        <img src="${h.imagem||''}">
-        <strong onclick="toggleDetalhes(${i})">${h.nome}</strong>
-        <div onclick="toggleDetalhes(${i})">${h.data}</div>
-        <div class="seta" id="seta-${i}" onclick="toggleDetalhes(${i})">▶</div>
-      </div>
-
-      <div class="historico-detalhes" id="detalhes-${i}">
-        <p>Compra: R$ ${h.compra.toFixed(2)}</p>
-        <p>Venda: R$ ${h.venda.toFixed(2)}</p>
-        <p>Lucro: R$ ${(h.venda-h.compra).toFixed(2)}</p>
-        <p>Nota: ${h.nota||'-'}</p>
-        <button class="action" style="background:var(--danger)" onclick="excluirVenda(${i})">Excluir</button>
-      </div>
-    </div>`;
-  });
-}
-
-function toggleDetalhes(i){
-  const d=document.getElementById(`detalhes-${i}`);
-  const s=document.getElementById(`seta-${i}`);
-  const aberto=d.style.display==="block";
-  d.style.display=aberto?"none":"block";
-  s.textContent=aberto?"▶":"▼";
-}
-
-function excluirVenda(i){
-  if(!confirm("Excluir esta venda?")) return;
-  const lista = historico.slice().sort((a,b)=>b.ts-a.ts);
-  const item = lista[i];
-  // remove o item real do historico original
-  const idxReal = historico.findIndex(h => h.ts === item.ts && h.nome === item.nome && h.venda === item.venda);
-  if(idxReal >= 0){
-    const h=historico[idxReal];
-    lucroTotal-=(h.venda-h.compra);
-    historico.splice(idxReal,1);
+  function stateToB64(){
+    return encodeB64Unicode(JSON.stringify(getStateObj()));
   }
-  salvarDados();
-  atualizarDashboard();
-  atualizarHistorico();
-}
 
-/* INIT */
-carregarDados();
+  function b64ToState(b64){
+    const obj = JSON.parse(decodeB64Unicode(b64));
+    estoque = Array.isArray(obj.estoque) ? obj.estoque : [];
+    historico = Array.isArray(obj.historico) ? obj.historico : [];
+    lucroTotal = Number(obj.lucroTotal) || 0;
+  }
+
+  function sendToKodular(b64){
+    try{
+      if (window.AppInventor && typeof window.AppInventor.setWebViewString === "function") {
+        window.AppInventor.setWebViewString(b64);
+      }
+    }catch(e){
+      // se estiver rodando no navegador comum, só ignora
+      console.warn("Kodular bridge indisponível:", e);
+    }
+  }
+
+  // salva com debounce para evitar bug quando cadastra rápido
+  function salvarDados(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      try{
+        const b64 = stateToB64();
+
+        // backup (browser)
+        localStorage.setItem("cv_state_b64", b64);
+
+        // manda para Kodular (TinyDB)
+        if (b64 !== lastSentB64) {
+          lastSentB64 = b64;
+          sendToKodular(b64);
+        }
+      }catch(e){
+        console.error("Erro ao salvar:", e);
+      }
+    }, 350);
+  }
+
+  // chamada pelo Kodular depois de ler o TinyDB e rodar EvaluateJS
+  window.loadFromKodularB64 = function(b64){
+    if(!b64 || b64==="0" || b64==="null" || b64==="undefined") return;
+    try{
+      b64ToState(b64);
+      localStorage.setItem("cv_state_b64", b64);
+      atualizarDashboard();
+      atualizarHistorico();
+      if(!document.getElementById("venda").classList.contains("hidden")) renderVenda();
+    }catch(e){
+      console.error("Falha ao carregar do Kodular:", e);
+    }
+  };
+
+  // ====== NAV ======
+  function mostrar(id){
+    document.querySelectorAll('.card,#venda').forEach(e=>e.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+    if(id==="venda") renderVenda();
+  }
+
+  // ====== IMAGEM (compressão) ======
+  let imagemCarregando = false;
+
+  function setBtnCadastrar(text, disabled){
+    const btn = document.getElementById("btnCadastrar");
+    btn.disabled = !!disabled;
+    btn.textContent = text;
+  }
+
+  function carregarImagem(e){
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+
+    imagemCarregando = true;
+    setBtnCadastrar("Processando imagem...", true);
+
+    const reader = new FileReader();
+    reader.onload = function(){
+      const img = new Image();
+      img.onload = function(){
+        // reduz para não explodir o tamanho do TinyDB/WebViewString
+        const MAX = 700; // ajustável
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          const ratio = Math.min(MAX / w, MAX / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+
+        // JPEG com qualidade ajuda MUITO no tamanho
+        imagemTemp = canvas.toDataURL("image/jpeg", 0.75);
+
+        imagemCarregando = false;
+        setBtnCadastrar("Cadastrar Produto", false);
+      };
+      img.onerror = function(){
+        imagemTemp = null;
+        imagemCarregando = false;
+        setBtnCadastrar("Cadastrar Produto", false);
+        alert("Não consegui processar a imagem. Tente outra.");
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ====== CADASTRO ======
+  function cadastrar(){
+    const nomeProduto = document.getElementById("nomeProduto");
+    const valorCompra = document.getElementById("valorCompra");
+
+    if(imagemCarregando) return alert("Aguarde a imagem carregar.");
+    if(!nomeProduto.value || !valorCompra.value) return alert("Preencha tudo");
+
+    estoque.push({
+      nome: nomeProduto.value.trim(),
+      compra: Number(valorCompra.value),
+      imagem: imagemTemp
+    });
+
+    nomeProduto.value = "";
+    valorCompra.value = "";
+    imagemTemp = null;
+    document.getElementById("imgInput").value = "";
+
+    salvarDados();
+    atualizarDashboard();
+
+    // se estiver na tela de vender, atualiza lista
+    if(!document.getElementById("venda").classList.contains("hidden")) renderVenda();
+  }
+
+  // ====== VENDA ======
+  function renderVenda(){
+    const venda = document.getElementById("venda");
+    venda.innerHTML = "";
+    if(estoque.length === 0){
+      venda.innerHTML = `<div class="card">Nenhum produto no estoque.</div>`;
+      return;
+    }
+
+    estoque.forEach((p,i)=>{
+      venda.innerHTML += `
+        <div class="produto">
+          <img src="${p.imagem || ''}" alt="">
+          <div>
+            <strong>${p.nome}</strong><br>
+            <small>Custo: R$ ${Number(p.compra).toFixed(2)}</small>
+            <input type="date" id="data-${i}">
+            <input type="number" placeholder="Valor de venda" id="venda-${i}">
+            <textarea placeholder="Nota / Detalhes" id="nota-${i}"></textarea>
+            <button class="action" style="background:var(--success)" onclick="vender(${i})">Vender</button>
+          </div>
+        </div>`;
+    });
+  }
+
+  function vender(i){
+    const v = parseFloat(document.getElementById(`venda-${i}`).value);
+    if(!v) return alert("Informe o valor");
+
+    const p = estoque[i];
+    if(!p) return alert("Produto não encontrado. Atualize a tela.");
+
+    const nota = document.getElementById(`nota-${i}`).value;
+    const dataInput = document.getElementById(`data-${i}`).value;
+    const dataVenda = dataInput ? new Date(dataInput + "T12:00") : new Date();
+
+    lucroTotal += v - Number(p.compra);
+
+    historico.push({
+      ...p,
+      venda: v,
+      nota,
+      data: dataVenda.toLocaleDateString("pt-BR"),
+      mes: dataVenda.getMonth(),
+      ts: dataVenda.getTime()
+    });
+
+    estoque.splice(i,1);
+
+    salvarDados();
+    renderVenda();
+    atualizarDashboard();
+    atualizarHistorico();
+  }
+
+  // ====== DASHBOARD ======
+  function atualizarDashboard(){
+    document.getElementById("qtd").textContent = estoque.length;
+    document.getElementById("valorEstoque").textContent =
+      estoque.reduce((s,p)=>s + Number(p.compra || 0), 0).toFixed(2);
+    document.getElementById("lucro").textContent = lucroTotal.toFixed(2);
+  }
+
+  // ====== HISTÓRICO ======
+  function atualizarHistorico(){
+    const filtroMes = document.getElementById("filtroMes").value;
+    const historicoLista = document.getElementById("historicoLista");
+    historicoLista.innerHTML = "";
+
+    historico
+      .slice()
+      .sort((a,b)=>b.ts-a.ts)
+      .filter(h => filtroMes==="" || String(h.mes)===String(filtroMes))
+      .forEach((h,i)=>{
+        historicoLista.innerHTML += `
+          <div class="historico-item">
+            <div class="historico-header">
+              <img src="${h.imagem||''}" alt="">
+              <strong onclick="toggleDetalhes(${i})">${h.nome}</strong>
+              <div onclick="toggleDetalhes(${i})">${h.data}</div>
+              <div class="seta" id="seta-${i}" onclick="toggleDetalhes(${i})">▶</div>
+            </div>
+
+            <div class="historico-detalhes" id="detalhes-${i}">
+              <p>Compra: R$ ${Number(h.compra).toFixed(2)}</p>
+              <p>Venda: R$ ${Number(h.venda).toFixed(2)}</p>
+              <p>Lucro: R$ ${(Number(h.venda)-Number(h.compra)).toFixed(2)}</p>
+              <p>Nota: ${h.nota || '-'}</p>
+              <button class="action" style="background:var(--danger)" onclick="excluirVenda(${i})">Excluir</button>
+            </div>
+          </div>`;
+      });
+  }
+
+  function toggleDetalhes(i){
+    const d = document.getElementById(`detalhes-${i}`);
+    const s = document.getElementById(`seta-${i}`);
+    const aberto = d.style.display === "block";
+    d.style.display = aberto ? "none" : "block";
+    s.textContent = aberto ? "▶" : "▼";
+  }
+
+  function excluirVenda(i){
+    if(!confirm("Excluir esta venda?")) return;
+    const h = historico[i];
+    lucroTotal -= (Number(h.venda) - Number(h.compra));
+    historico.splice(i,1);
+    salvarDados();
+    atualizarDashboard();
+    atualizarHistorico();
+  }
+
+  // ====== INIT ======
+  // carrega um backup local (para browser). No Kodular, o TinyDB vai sobrescrever via loadFromKodularB64()
+  (function init(){
+    try{
+      const b64 = localStorage.getItem("cv_state_b64");
+      if(b64) {
+        b64ToState(b64);
+      } else {
+        // compat: se tiver dados antigos
+        estoque = JSON.parse(localStorage.getItem("estoque")) || [];
+        historico = JSON.parse(localStorage.getItem("historico")) || [];
+        lucroTotal = parseFloat(localStorage.getItem("lucroTotal")) || 0;
+      }
+    }catch(e){
+      estoque=[]; historico=[]; lucroTotal=0;
+    }
+    atualizarDashboard();
+    atualizarHistorico();
+  })();
 </script>
 
 </body>
