@@ -290,6 +290,7 @@
   </nav>
 
   <main>
+    <!-- DASHBOARD -->
     <section id="dashboard" class="card screen">
       <div class="dashboard">
         <div class="stat">
@@ -309,6 +310,7 @@
       </div>
     </section>
 
+    <!-- CADASTRO -->
     <section id="cadastro" class="card screen hidden">
       <input id="nomeProduto" placeholder="Nome do produto" />
       <input id="valorCompra" type="number" inputmode="decimal" placeholder="Valor de compra" />
@@ -316,8 +318,10 @@
       <button class="action" type="button" onclick="cadastrar()">Cadastrar Produto</button>
     </section>
 
+    <!-- VENDA -->
     <section id="venda" class="card screen hidden"></section>
 
+    <!-- HISTÓRICO -->
     <section id="historico" class="card screen hidden">
       <select id="filtroMes" onchange="atualizarHistorico()">
         <option value="">Todos os meses</option>
@@ -339,54 +343,72 @@
     let lucroTotal = 0;
     let imagemTemp = null;
 
-    /* ======= PONTE KODULAR (TinyDB) ======= */
-    function _b64enc(str){
-      // unicode-safe
+    // evita loop quando os dados vêm do Kodular
+    let isHydratingFromKodular = false;
+
+    /* ===== Base64 seguro p/ PT-BR (UTF-8) ===== */
+    function toB64(str){
       return btoa(unescape(encodeURIComponent(str)));
     }
-    function _b64dec(b64){
+    function fromB64(b64){
       return decodeURIComponent(escape(atob(b64)));
     }
 
-    function enviarParaKodular(){
+    /* ===== Envia backup pro Kodular (dispara WebViewStringChanged) ===== */
+    function enviarParaKodularB64(){
       try{
         const payload = JSON.stringify({ estoque, historico, lucroTotal });
-        const b64 = _b64enc(payload);
+        const b64 = toB64(payload);
+
+        // Kodular/AppInventor
         if(window.AppInventor && window.AppInventor.setWebViewString){
           window.AppInventor.setWebViewString(b64);
         }
-      }catch(e){}
+      }catch(e){
+        // Se imagem ficar grande demais, pode estourar limite
+        console.log("Erro ao enviar p/ Kodular:", e);
+      }
     }
 
-    // Kodular vai chamar isso no PageLoaded
+    /* ===== Recebe backup do Kodular (PageLoaded -> EvaluateJS chama isso) ===== */
     window.loadFromKodularB64 = function(b64){
       try{
-        if(!b64) return;
-        const json = _b64dec(b64);
-        const d = JSON.parse(json);
+        isHydratingFromKodular = true;
+
+        const payload = fromB64(b64);
+        const d = JSON.parse(payload);
 
         estoque = d.estoque || [];
         historico = d.historico || [];
         lucroTotal = parseFloat(d.lucroTotal) || 0;
 
-        // mantém também no navegador (útil em testes fora do APK)
-        localStorage.setItem("estoque", JSON.stringify(estoque));
-        localStorage.setItem("historico", JSON.stringify(historico));
-        localStorage.setItem("lucroTotal", String(lucroTotal));
+        // salva local também (pra quando abrir no navegador)
+        salvarDadosLocalOnly();
 
         atualizarDashboard();
         atualizarHistorico();
-      }catch(e){}
+      }catch(e){
+        console.log("Erro ao carregar do Kodular:", e);
+      }finally{
+        isHydratingFromKodular = false;
+      }
     };
 
-    /* ===== STORAGE (WEB) ===== */
-    function salvarDados(){
-      localStorage.setItem("estoque", JSON.stringify(estoque));
-      localStorage.setItem("historico", JSON.stringify(historico));
-      localStorage.setItem("lucroTotal", String(lucroTotal));
+    /* ===== STORAGE LOCAL (browser) ===== */
+    function salvarDadosLocalOnly(){
+      try{
+        localStorage.setItem("estoque", JSON.stringify(estoque));
+        localStorage.setItem("historico", JSON.stringify(historico));
+        localStorage.setItem("lucroTotal", String(lucroTotal));
+      }catch(e){
+        console.log("Erro localStorage:", e);
+      }
+    }
 
-      // ✅ salva no TinyDB do Kodular também
-      enviarParaKodular();
+    function salvarDados(){
+      salvarDadosLocalOnly();
+      // só envia se NÃO estiver hidratando do Kodular
+      if(!isHydratingFromKodular) enviarParaKodularB64();
     }
 
     function carregarDados(){
@@ -398,36 +420,20 @@
       atualizarHistorico();
     }
 
+    /* ===== NAV ===== */
     function mostrar(id){
       document.querySelectorAll(".screen").forEach(s => s.classList.add("hidden"));
       $(id).classList.remove("hidden");
       if(id === "venda") renderVenda();
     }
 
-    /* ===== IMAGEM (COMPRESSÃO pra não estourar tamanho no TinyDB) ===== */
+    /* ===== CADASTRO ===== */
     function carregarImagem(e){
       const file = e.target.files && e.target.files[0];
       if(!file) return;
 
       const r = new FileReader();
-      r.onload = () => {
-        const img = new Image();
-        img.onload = () => {
-          const max = 480; // tamanho máximo (reduz MUITO o peso)
-          let w = img.width, h = img.height;
-          if(w > h && w > max){ h = Math.round(h * (max / w)); w = max; }
-          else if(h >= w && h > max){ w = Math.round(w * (max / h)); h = max; }
-
-          const c = document.createElement("canvas");
-          c.width = w; c.height = h;
-          const ctx = c.getContext("2d");
-          ctx.drawImage(img, 0, 0, w, h);
-
-          // jpeg comprimido
-          imagemTemp = c.toDataURL("image/jpeg", 0.75);
-        };
-        img.src = r.result;
-      };
+      r.onload = () => imagemTemp = r.result; // dataURL (pode ficar grande)
       r.readAsDataURL(file);
     }
 
@@ -448,6 +454,7 @@
       alert("Produto cadastrado!");
     }
 
+    /* ===== VENDA ===== */
     function renderVenda(){
       const vendaEl = $("venda");
 
@@ -488,7 +495,7 @@
 
       lucroTotal += (v - p.compra);
 
-      const ts = dataVenda.getTime();
+      const ts = Date.now(); // id único
       historico.push({
         ...p,
         venda: v,
@@ -506,12 +513,14 @@
       alert("Venda registrada!");
     }
 
+    /* ===== DASHBOARD ===== */
     function atualizarDashboard(){
       $("qtd").textContent = estoque.length;
       $("valorEstoque").textContent = estoque.reduce((s,p) => s + p.compra, 0).toFixed(2);
       $("lucro").textContent = lucroTotal.toFixed(2);
     }
 
+    /* ===== HISTÓRICO ===== */
     function atualizarHistorico(){
       const mes = $("filtroMes").value;
       const listaEl = $("historicoLista");
@@ -573,7 +582,7 @@
       atualizarHistorico();
     }
 
-    // INIT
+    /* INIT */
     carregarDados();
     mostrar("dashboard");
   </script>
