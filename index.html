@@ -1,524 +1,111 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Controle de Vendas</title>
+<script>
+  const $ = (id) => document.getElementById(id);
 
-  <style>
-    :root{
-      --bg:#f4f6f9;
-      --card:#ffffff;
-      --primary:#2563eb;
-      --success:#16a34a;
-      --danger:#dc2626;
-      --warning:#f59e0b;
-      --text:#111827;
-      --border:#e5e7eb;
+  let estoque = [];
+  let historico = [];
+  let lucroTotal = 0;
+  let imagemTemp = null;
 
-      --fs-base:18px;
-      --fs-title:22px;
-      --fs-btn:16px;
-      --fs-stat:36px;
-      --radius:18px;
-    }
+  // evita loop quando estiver restaurando do Kodular
+  let __restoringFromKodular = false;
 
-    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
-    html,body{ height:100%; }
+  // ===== Base64 seguro (Unicode) =====
+  function b64EncodeUnicode(str){
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+      (_, p1) => String.fromCharCode(parseInt(p1, 16))
+    ));
+  }
+  function b64DecodeUnicode(b64){
+    return decodeURIComponent(Array.prototype.map.call(atob(b64), c =>
+      '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+    ).join(''));
+  }
 
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      background:var(--bg);
-      color:var(--text);
-      font-size:var(--fs-base);
-      display:flex;
-      flex-direction:column;
-      min-height:100dvh;
-      overflow-x:hidden;
-    }
+  // ===== Estado completo =====
+  function getStateObj(){
+    return { estoque, historico, lucroTotal };
+  }
+  function setStateObj(state){
+    estoque = Array.isArray(state.estoque) ? state.estoque : [];
+    historico = Array.isArray(state.historico) ? state.historico : [];
+    lucroTotal = Number(state.lucroTotal) || 0;
+  }
 
-    header{
-      background:var(--primary);
-      color:#fff;
-      text-align:center;
-      font-weight:900;
-      font-size:var(--fs-title);
-      padding:16px 12px;
-      padding-top:calc(16px + env(safe-area-inset-top));
-      box-shadow:0 8px 22px rgba(37,99,235,.25);
-      position:sticky;
-      top:0;
-      z-index:50;
-    }
+  function enviarParaKodular(){
+    if(__restoringFromKodular) return;
+    try{
+      const json = JSON.stringify(getStateObj());
+      const b64  = b64EncodeUnicode(json);
 
-    nav{
-      position:sticky;
-      top:64px;
-      z-index:40;
-      padding:12px;
-      background:rgba(244,246,249,.95);
-      backdrop-filter: blur(10px);
-      border-bottom:1px solid var(--border);
-    }
-
-    .nav-wrap{
-      max-width:980px;
-      margin:0 auto;
-      display:grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap:10px;
-    }
-
-    nav button{
-      min-height:54px;
-      border:none;
-      border-radius:999px;
-      background:var(--primary);
-      color:#fff;
-      font-weight:800;
-      font-size:var(--fs-btn);
-      cursor:pointer;
-      box-shadow:0 10px 18px rgba(37,99,235,.18);
-      transition: transform .06s ease, filter .12s ease;
-    }
-    nav button:active{ transform:scale(.98); filter:brightness(.95); }
-
-    main{
-      flex:1;
-      max-width:980px;
-      width:100%;
-      margin:0 auto;
-      padding:14px 12px calc(18px + env(safe-area-inset-bottom));
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-    }
-
-    .card{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      padding:18px;
-      box-shadow:0 10px 26px rgba(17,24,39,.08);
-    }
-
-    .screen{ flex:1; }
-    .hidden{ display:none !important; }
-
-    input,select,textarea{
-      width:100%;
-      padding:14px 14px;
-      border-radius:16px;
-      border:1px solid var(--border);
-      margin-bottom:12px;
-      font-size:18px;
-      outline:none;
-      background:#fff;
-    }
-    textarea{ resize:vertical; min-height:120px; }
-
-    button.action{
-      width:100%;
-      min-height:56px;
-      border:none;
-      border-radius:16px;
-      background:var(--primary);
-      color:#fff;
-      font-weight:900;
-      font-size:16px;
-      cursor:pointer;
-    }
-
-    .dashboard{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:14px;
-    }
-
-    .stat{
-      background:#f9fafb;
-      border:1px solid var(--border);
-      border-radius:18px;
-      padding:18px;
-      min-height:120px;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-    }
-
-    .stat .label{
-      font-size:14px;
-      font-weight:800;
-      opacity:.85;
-    }
-
-    .stat .value{
-      margin-top:10px;
-      font-size:var(--fs-stat);
-      font-weight:1000;
-      line-height:1;
-      letter-spacing:-.4px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .stat:nth-child(1) .value{ color:var(--warning); }
-    .stat:nth-child(2) .value{ color:var(--primary); }
-    .stat:nth-child(3) .value{ color:var(--success); }
-
-    .produto{
-      display:grid;
-      grid-template-columns:96px 1fr;
-      gap:14px;
-      border:1px solid var(--border);
-      border-radius:18px;
-      padding:14px;
-      margin-bottom:14px;
-      background:#fff;
-    }
-
-    .produto img{
-      width:96px;
-      height:96px;
-      object-fit:cover;
-      border-radius:16px;
-      background:#e5e7eb;
-    }
-
-    .produto strong{ font-size:16px; font-weight:900; }
-    .produto small{ display:block; margin-top:6px; opacity:.85; }
-
-    .vazio{
-      text-align:center;
-      padding:28px 10px;
-      color:#6b7280;
-      font-weight:800;
-    }
-
-    .historico-item{
-      border:1px solid var(--border);
-      border-radius:18px;
-      padding:14px;
-      margin-bottom:14px;
-      background:#fff;
-    }
-
-    .historico-header{
-      display:grid;
-      grid-template-columns:72px 1fr 24px;
-      grid-template-areas:
-        "img title arrow"
-        "img date  arrow";
-      gap:10px;
-      align-items:center;
-    }
-
-    .historico-header img{
-      grid-area:img;
-      width:72px;
-      height:72px;
-      object-fit:cover;
-      border-radius:16px;
-      background:#e5e7eb;
-    }
-
-    .historico-header strong{
-      grid-area:title;
-      font-size:16px;
-      font-weight:900;
-      cursor:pointer;
-      line-height:1.15;
-    }
-
-    .data-chip{
-      grid-area:date;
-      justify-self:start;
-      font-size:13px;
-      font-weight:800;
-      background:#f3f4f6;
-      border:1px solid var(--border);
-      padding:8px 12px;
-      border-radius:999px;
-      cursor:pointer;
-      white-space:nowrap;
-    }
-
-    .seta{
-      grid-area:arrow;
-      font-size:20px;
-      text-align:center;
-      cursor:pointer;
-      user-select:none;
-      color:#374151;
-    }
-
-    .historico-detalhes{
-      margin-top:12px;
-      padding-top:12px;
-      border-top:1px dashed var(--border);
-      display:none;
-      font-size:16px;
-    }
-    .historico-detalhes p{ margin:8px 0; }
-
-    @media (min-width: 900px){
-      :root{
-        --fs-base:16px;
-        --fs-title:22px;
-        --fs-btn:14px;
-        --fs-stat:28px;
+      // Só existe dentro do WebViewer (Kodular/App Inventor)
+      if(window.AppInventor && window.AppInventor.setWebViewString){
+        window.AppInventor.setWebViewString(b64);
       }
-      .nav-wrap{ grid-template-columns: repeat(4, 1fr); }
-      .dashboard{ grid-template-columns: repeat(3, minmax(0,1fr)); }
-      nav{ top:72px; }
-    }
-  </style>
-</head>
+    }catch(e){}
+  }
 
-<body>
-  <header>💰 Controle de Vendas</header>
+  // ===== STORAGE local + envia para Kodular =====
+  function salvarDados(){
+    localStorage.setItem("estoque", JSON.stringify(estoque));
+    localStorage.setItem("historico", JSON.stringify(historico));
+    localStorage.setItem("lucroTotal", String(lucroTotal));
+    enviarParaKodular();
+  }
 
-  <nav>
-    <div class="nav-wrap">
-      <button type="button" onclick="mostrar('dashboard')">Dashboard</button>
-      <button type="button" onclick="mostrar('cadastro')">Cadastrar</button>
-      <button type="button" onclick="mostrar('venda')">Vender</button>
-      <button type="button" onclick="mostrar('historico')">Histórico</button>
-    </div>
-  </nav>
+  function carregarDados(){
+    estoque = JSON.parse(localStorage.getItem("estoque")) || [];
+    historico = JSON.parse(localStorage.getItem("historico")) || [];
+    lucroTotal = parseFloat(localStorage.getItem("lucroTotal")) || 0;
+    atualizarDashboard();
+    atualizarHistorico();
+  }
 
-  <main>
-    <!-- DASHBOARD -->
-    <section id="dashboard" class="card screen">
-      <div class="dashboard">
-        <div class="stat">
-          <div class="label">Produtos em estoque</div>
-          <div class="value" id="qtd">0</div>
-        </div>
+  // ===== FUNÇÃO QUE O KODULAR CHAMA =====
+  // (via EvaluateJS)
+  window.loadFromKodularB64 = function(b64){
+    if(!b64) return;
+    try{
+      __restoringFromKodular = true;
 
-        <div class="stat">
-          <div class="label">Valor em estoque</div>
-          <div class="value">R$ <span id="valorEstoque">0.00</span></div>
-        </div>
+      const json = b64DecodeUnicode(b64);
+      const state = JSON.parse(json);
 
-        <div class="stat">
-          <div class="label">Lucro total</div>
-          <div class="value">R$ <span id="lucro">0.00</span></div>
-        </div>
-      </div>
-    </section>
+      setStateObj(state);
 
-    <!-- CADASTRO -->
-    <section id="cadastro" class="card screen hidden">
-      <input id="nomeProduto" placeholder="Nome do produto" />
-      <input id="valorCompra" type="number" inputmode="decimal" placeholder="Valor de compra" />
-      <input id="fotoProduto" type="file" accept="image/*" />
-      <button class="action" type="button" onclick="cadastrar()">Cadastrar Produto</button>
-      <div style="margin-top:10px; font-size:13px; opacity:.8;">
-        Dica: fotos são comprimidas. Se você cadastrar MUITAS fotos, o app pode remover as imagens para não perder os itens.
-      </div>
-    </section>
-
-    <!-- VENDA -->
-    <section id="venda" class="card screen hidden"></section>
-
-    <!-- HISTÓRICO -->
-    <section id="historico" class="card screen hidden">
-      <select id="filtroMes" onchange="atualizarHistorico()">
-        <option value="">Todos os meses</option>
-        <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
-        <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
-        <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
-        <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
-      </select>
-
-      <div id="historicoLista"></div>
-    </section>
-  </main>
-
-  <script>
-    const $ = (id) => document.getElementById(id);
-
-    // ====== CONFIG ======
-    const LOCAL_KEY = "cv_state_v2";
-    const MAX_B64_LEN = 650000; // proteção: se passar disso, removemos imagens para não perder dados
-    const SYNC_DEBOUNCE_MS = 700;
-
-    // ====== STATE ======
-    let estoque = [];
-    let historico = [];
-    let lucroTotal = 0;
-    let imagemTemp = null;
-
-    let syncTimer = null;
-    let lastSent = "";
-    let isApplyingRemote = false;
-
-    // ====== HELPERS ======
-    function makeId(){
-      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-      return "id_" + Date.now() + "_" + Math.random().toString(16).slice(2);
-    }
-
-    function toB64(str){
-      return btoa(unescape(encodeURIComponent(str)));
-    }
-    function fromB64(b64){
-      return decodeURIComponent(escape(atob(b64)));
-    }
-
-    function serializeState(){
-      return {
-        version: 2,
-        updatedAt: Date.now(),
-        estoque,
-        historico,
-        lucroTotal
-      };
-    }
-
-    function clone(obj){
-      return JSON.parse(JSON.stringify(obj));
-    }
-
-    function stripImages(state){
-      const s = clone(state);
-      s.estoque = (s.estoque || []).map(p => ({...p, imagem: null}));
-      s.historico = (s.historico || []).map(h => ({...h, imagem: null}));
-      return s;
-    }
-
-    function applyState(state){
-      estoque = Array.isArray(state.estoque) ? state.estoque : [];
-      historico = Array.isArray(state.historico) ? state.historico : [];
-      lucroTotal = parseFloat(state.lucroTotal) || 0;
+      // salva no localStorage mas NÃO reenvia pro Kodular (evita loop)
+      localStorage.setItem("estoque", JSON.stringify(estoque));
+      localStorage.setItem("historico", JSON.stringify(historico));
+      localStorage.setItem("lucroTotal", String(lucroTotal));
 
       atualizarDashboard();
       atualizarHistorico();
+    }catch(e){
+      console.log("Erro ao restaurar do Kodular:", e);
+    }finally{
+      __restoringFromKodular = false;
     }
+  };
 
-    // ====== LOCAL STORAGE ======
-    function salvarLocal(state){
-      try{
-        localStorage.setItem(LOCAL_KEY, JSON.stringify(state));
-        return true;
-      }catch(e){
-        return false;
-      }
-    }
+  // ===== NAV =====
+  function mostrar(id){
+    document.querySelectorAll(".screen").forEach(s => s.classList.add("hidden"));
+    $(id).classList.remove("hidden");
+    if(id === "venda") renderVenda();
+  }
 
-    function carregarLocal(){
-      try{
-        const raw = localStorage.getItem(LOCAL_KEY);
-        if(!raw) return null;
-        return JSON.parse(raw);
-      }catch(e){
-        return null;
-      }
-    }
+  // ===== IMAGEM (REDUZ PARA NÃO EXPLODIR O TAMANHO) =====
+  function carregarImagem(e){
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
 
-    // ====== KODULAR SYNC (AppInventor WebViewString) ======
-    function sendToKodularB64(state){
-      try{
-        const payload = JSON.stringify(state);
-        let b64 = toB64(payload);
-
-        // proteção de tamanho: remove imagens se ficar grande
-        if (b64.length > MAX_B64_LEN){
-          const stripped = stripImages(state);
-          const payload2 = JSON.stringify(stripped);
-          b64 = toB64(payload2);
-
-          // aplica localmente também (pra não ficar “salvando e sumindo”)
-          applyState(stripped);
-          salvarLocal(stripped);
-
-          // avisa 1x por sessão
-          if(!window.__warnedBig){
-            window.__warnedBig = true;
-            alert("Aviso: havia muitas fotos e os dados ficaram grandes. Para não perder seus itens, o app removeu as imagens e salvou apenas as informações.");
-          }
-        }
-
-        if (b64 === lastSent) return;
-        lastSent = b64;
-
-        if (window.AppInventor && window.AppInventor.setWebViewString){
-          window.AppInventor.setWebViewString(b64);
-        }
-      }catch(e){}
-    }
-
-    function queueSyncToKodular(){
-      if(isApplyingRemote) return;
-      clearTimeout(syncTimer);
-      syncTimer = setTimeout(() => {
-        const state = serializeState();
-
-        // tenta salvar local; se falhar, remove imagens e salva
-        const ok = salvarLocal(state);
-        if(!ok){
-          const stripped = stripImages(state);
-          applyState(stripped);
-          salvarLocal(stripped);
-          sendToKodularB64(stripped);
-          return;
-        }
-
-        sendToKodularB64(state);
-      }, SYNC_DEBOUNCE_MS);
-    }
-
-    // Chamado SEMPRE que mudar dados
-    function salvarDados(){
-      queueSyncToKodular();
-    }
-
-    // Recebe do Kodular (o Kodular chama isso no PageLoaded via EvaluateJS)
-    window.loadFromKodularB64 = function(b64){
-      try{
-        const payload = fromB64(b64);
-        const remote = JSON.parse(payload);
-
-        const local = carregarLocal();
-        const localUpdated = local && local.updatedAt ? local.updatedAt : 0;
-        const remoteUpdated = remote && remote.updatedAt ? remote.updatedAt : 0;
-
-        // aplica o mais recente
-        const winner = remoteUpdated >= localUpdated ? remote : local;
-
-        isApplyingRemote = true;
-        applyState(winner || {estoque:[], historico:[], lucroTotal:0});
-        salvarLocal(winner || {version:2, updatedAt:Date.now(), estoque:[], historico:[], lucroTotal:0});
-        setTimeout(() => { isApplyingRemote = false; }, 500);
-      }catch(e){}
-    };
-
-    // ====== NAV ======
-    function mostrar(id){
-      document.querySelectorAll(".screen").forEach(s => s.classList.add("hidden"));
-      $(id).classList.remove("hidden");
-      if(id === "venda") renderVenda();
-    }
-
-    // ====== IMAGEM (compressão) ======
-    async function compressImageToDataURL(file, maxSide = 240, quality = 0.6){
-      const url = URL.createObjectURL(file);
-      try{
-        const img = new Image();
-        img.decoding = "async";
-        img.src = url;
-        await new Promise((res, rej) => {
-          img.onload = () => res();
-          img.onerror = () => rej(new Error("Erro ao carregar imagem"));
-        });
-
-        let { width:w, height:h } = img;
-        const scale = Math.min(1, maxSide / Math.max(w, h));
-        w = Math.max(1, Math.round(w * scale));
-        h = Math.max(1, Math.round(h * scale));
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 480; // reduz bastante
+        let w = img.width, h = img.height;
+        if(w > h && w > max){ h = Math.round(h * (max / w)); w = max; }
+        else if(h > max){ w = Math.round(w * (max / h)); h = max; }
 
         const canvas = document.createElement("canvas");
         canvas.width = w;
@@ -526,190 +113,164 @@
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, w, h);
 
-        return canvas.toDataURL("image/jpeg", quality);
-      } finally {
-        URL.revokeObjectURL(url);
-      }
+        imagemTemp = canvas.toDataURL("image/jpeg", 0.75); // bem menor que PNG
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ===== CADASTRO =====
+  function cadastrar(){
+    const nome = $("nomeProduto").value.trim();
+    const compra = parseFloat($("valorCompra").value);
+
+    if(!nome || !compra) return alert("Preencha tudo");
+
+    estoque.push({ nome, compra, imagem: imagemTemp });
+
+    $("nomeProduto").value = "";
+    $("valorCompra").value = "";
+    imagemTemp = null;
+
+    salvarDados();
+    atualizarDashboard();
+    alert("Produto cadastrado!");
+  }
+
+  // ===== VENDA =====
+  function renderVenda(){
+    const vendaEl = $("venda");
+
+    if(estoque.length === 0){
+      vendaEl.innerHTML = `<div class="vazio">Nenhum produto no estoque para vender.</div>`;
+      return;
     }
 
-    $("fotoProduto").addEventListener("change", async (e) => {
-      const file = e.target.files && e.target.files[0];
-      if(!file){ imagemTemp = null; return; }
-      try{
-        imagemTemp = await compressImageToDataURL(file, 240, 0.6);
-      }catch(err){
-        imagemTemp = null;
-        alert("Não consegui processar a imagem. Tente outra foto.");
-      }
+    vendaEl.innerHTML = "";
+
+    estoque.forEach((p,i) => {
+      vendaEl.innerHTML += `
+        <div class="produto">
+          <img src="${p.imagem || ''}" alt="">
+          <div>
+            <strong>${p.nome}</strong>
+            <small>Custo: R$ ${p.compra.toFixed(2)}</small>
+
+            <input type="date" id="data-${i}">
+            <input type="number" inputmode="decimal" placeholder="Valor de venda" id="venda-${i}">
+            <textarea placeholder="Nota / Detalhes" id="nota-${i}"></textarea>
+
+            <button class="action" type="button"
+              style="background:var(--success)"
+              onclick="vender(${i})">Vender</button>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  function vender(i){
+    const v = parseFloat(document.getElementById(`venda-${i}`).value);
+    if(!v) return alert("Informe o valor de venda");
+
+    const p = estoque[i];
+    const nota = document.getElementById(`nota-${i}`).value;
+    const dataInput = document.getElementById(`data-${i}`).value;
+    const dataVenda = dataInput ? new Date(dataInput + "T12:00") : new Date();
+
+    lucroTotal += (v - p.compra);
+
+    const ts = dataVenda.getTime();
+    historico.push({
+      ...p,
+      venda: v,
+      nota,
+      data: dataVenda.toLocaleDateString("pt-BR"),
+      mes: dataVenda.getMonth(),
+      ts
     });
 
-    // ====== CADASTRO ======
-    function cadastrar(){
-      const nome = $("nomeProduto").value.trim();
-      const compra = parseFloat($("valorCompra").value);
+    estoque.splice(i, 1);
+    salvarDados();
+    renderVenda();
+    atualizarDashboard();
+    atualizarHistorico();
+    alert("Venda registrada!");
+  }
 
-      if(!nome || !compra) return alert("Preencha tudo");
+  // ===== DASHBOARD =====
+  function atualizarDashboard(){
+    $("qtd").textContent = estoque.length;
+    $("valorEstoque").textContent = estoque.reduce((s,p) => s + p.compra, 0).toFixed(2);
+    $("lucro").textContent = lucroTotal.toFixed(2);
+  }
 
-      estoque.push({
-        id: makeId(),
-        nome,
-        compra,
-        imagem: imagemTemp || null
-      });
+  // ===== HISTÓRICO =====
+  function atualizarHistorico(){
+    const mes = $("filtroMes").value;
+    const listaEl = $("historicoLista");
+    listaEl.innerHTML = "";
 
-      $("nomeProduto").value = "";
-      $("valorCompra").value = "";
-      $("fotoProduto").value = "";
-      imagemTemp = null;
+    const lista = historico
+      .slice()
+      .sort((a,b) => b.ts - a.ts)
+      .filter(h => mes === "" || String(h.mes) === String(mes));
 
-      salvarDados();
-      atualizarDashboard();
-      alert("Produto cadastrado!");
+    if(lista.length === 0){
+      listaEl.innerHTML = `<div class="vazio">Nenhuma venda registrada.</div>`;
+      return;
     }
 
-    // ====== VENDA ======
-    function renderVenda(){
-      const vendaEl = $("venda");
-
-      if(estoque.length === 0){
-        vendaEl.innerHTML = `<div class="vazio">Nenhum produto no estoque para vender.</div>`;
-        return;
-      }
-
-      vendaEl.innerHTML = "";
-
-      estoque.forEach((p,i) => {
-        vendaEl.innerHTML += `
-          <div class="produto">
-            <img src="${p.imagem || ''}" alt="">
-            <div>
-              <strong>${p.nome}</strong>
-              <small>Custo: R$ ${p.compra.toFixed(2)}</small>
-
-              <input type="date" id="data-${p.id}">
-              <input type="number" inputmode="decimal" placeholder="Valor de venda" id="venda-${p.id}">
-              <textarea placeholder="Nota / Detalhes" id="nota-${p.id}"></textarea>
-
-              <button class="action" type="button" style="background:var(--success)" onclick="vender('${p.id}')">Vender</button>
-            </div>
+    lista.forEach(h => {
+      const key = h.ts;
+      listaEl.innerHTML += `
+        <div class="historico-item">
+          <div class="historico-header">
+            <img src="${h.imagem || ''}" alt="">
+            <strong onclick="toggleDetalhes(${key})">${h.nome}</strong>
+            <div class="data-chip" onclick="toggleDetalhes(${key})">${h.data}</div>
+            <div class="seta" id="seta-${key}" onclick="toggleDetalhes(${key})">▶</div>
           </div>
-        `;
-      });
-    }
 
-    function vender(id){
-      const pIndex = estoque.findIndex(x => x.id === id);
-      if(pIndex === -1) return;
-
-      const v = parseFloat(document.getElementById(`venda-${id}`).value);
-      if(!v) return alert("Informe o valor de venda");
-
-      const p = estoque[pIndex];
-      const nota = document.getElementById(`nota-${id}`).value;
-      const dataInput = document.getElementById(`data-${id}`).value;
-      const dataVenda = dataInput ? new Date(dataInput + "T12:00") : new Date();
-
-      lucroTotal += (v - p.compra);
-
-      historico.push({
-        id: makeId(),
-        nome: p.nome,
-        compra: p.compra,
-        imagem: p.imagem || null,
-        venda: v,
-        nota,
-        data: dataVenda.toLocaleDateString("pt-BR"),
-        mes: dataVenda.getMonth(),
-        ts: dataVenda.getTime()
-      });
-
-      estoque.splice(pIndex, 1);
-      salvarDados();
-      renderVenda();
-      atualizarDashboard();
-      atualizarHistorico();
-      alert("Venda registrada!");
-    }
-
-    // ====== DASHBOARD ======
-    function atualizarDashboard(){
-      $("qtd").textContent = estoque.length;
-      $("valorEstoque").textContent = estoque.reduce((s,p) => s + (p.compra || 0), 0).toFixed(2);
-      $("lucro").textContent = (parseFloat(lucroTotal) || 0).toFixed(2);
-    }
-
-    // ====== HISTÓRICO ======
-    function atualizarHistorico(){
-      const mes = $("filtroMes").value;
-      const listaEl = $("historicoLista");
-      listaEl.innerHTML = "";
-
-      const lista = historico
-        .slice()
-        .sort((a,b) => (b.ts||0) - (a.ts||0))
-        .filter(h => mes === "" || String(h.mes) === String(mes));
-
-      if(lista.length === 0){
-        listaEl.innerHTML = `<div class="vazio">Nenhuma venda registrada.</div>`;
-        return;
-      }
-
-      lista.forEach(h => {
-        const key = h.id;
-        listaEl.innerHTML += `
-          <div class="historico-item">
-            <div class="historico-header">
-              <img src="${h.imagem || ''}" alt="">
-              <strong onclick="toggleDetalhes('${key}')">${h.nome}</strong>
-              <div class="data-chip" onclick="toggleDetalhes('${key}')">${h.data}</div>
-              <div class="seta" id="seta-${key}" onclick="toggleDetalhes('${key}')">▶</div>
-            </div>
-
-            <div class="historico-detalhes" id="detalhes-${key}">
-              <p><b>Compra:</b> R$ ${(h.compra || 0).toFixed(2)}</p>
-              <p><b>Venda:</b> R$ ${(h.venda || 0).toFixed(2)}</p>
-              <p><b>Lucro:</b> R$ ${((h.venda || 0) - (h.compra || 0)).toFixed(2)}</p>
-              <p><b>Nota:</b> ${h.nota || '-'}</p>
-              <button class="action" type="button" style="background:var(--danger)" onclick="excluirVenda('${key}')">Excluir</button>
-            </div>
+          <div class="historico-detalhes" id="detalhes-${key}">
+            <p><b>Compra:</b> R$ ${h.compra.toFixed(2)}</p>
+            <p><b>Venda:</b> R$ ${h.venda.toFixed(2)}</p>
+            <p><b>Lucro:</b> R$ ${(h.venda - h.compra).toFixed(2)}</p>
+            <p><b>Nota:</b> ${h.nota || '-'}</p>
+            <button class="action" type="button"
+              style="background:var(--danger)"
+              onclick="excluirVenda(${key})">Excluir</button>
           </div>
-        `;
-      });
-    }
+        </div>
+      `;
+    });
+  }
 
-    function toggleDetalhes(key){
-      const d = document.getElementById(`detalhes-${key}`);
-      const s = document.getElementById(`seta-${key}`);
-      const aberto = d.style.display === "block";
-      d.style.display = aberto ? "none" : "block";
-      s.textContent = aberto ? "▶" : "▼";
-    }
+  function toggleDetalhes(key){
+    const d = document.getElementById(`detalhes-${key}`);
+    const s = document.getElementById(`seta-${key}`);
+    const aberto = d.style.display === "block";
+    d.style.display = aberto ? "none" : "block";
+    s.textContent = aberto ? "▶" : "▼";
+  }
 
-    function excluirVenda(key){
-      if(!confirm("Excluir esta venda?")) return;
+  function excluirVenda(key){
+    if(!confirm("Excluir esta venda?")) return;
 
-      const idx = historico.findIndex(h => h.id === key);
-      if(idx === -1) return;
+    const idx = historico.findIndex(h => h.ts === key);
+    if(idx === -1) return;
 
-      const h = historico[idx];
-      lucroTotal -= ((h.venda || 0) - (h.compra || 0));
+    const h = historico[idx];
+    lucroTotal -= (h.venda - h.compra);
 
-      historico.splice(idx, 1);
-      salvarDados();
-      atualizarDashboard();
-      atualizarHistorico();
-    }
+    historico.splice(idx, 1);
+    salvarDados();
+    atualizarDashboard();
+    atualizarHistorico();
+  }
 
-    // ====== INIT ======
-    (function init(){
-      const local = carregarLocal();
-      if(local){
-        applyState(local);
-      }else{
-        applyState({estoque:[], historico:[], lucroTotal:0});
-      }
-      mostrar("dashboard");
-    })();
-  </script>
-</body>
-</html>
+  // INIT
+  carregarDados();
+  mostrar("dashboard");
+</script>
