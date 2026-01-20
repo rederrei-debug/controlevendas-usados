@@ -1,337 +1,358 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#111827" />
   <title>Controle de Vendas</title>
   <style>
     :root{
-      --bg: #0b1220;
-      --panel: rgba(255,255,255,.06);
-      --panel2: rgba(255,255,255,.10);
-      --stroke: rgba(255,255,255,.14);
-      --text: rgba(255,255,255,.92);
-      --muted: rgba(255,255,255,.68);
-      --danger: #ef4444;
-      --ok: #22c55e;
-      --accent: #60a5fa;
-      --shadow: 0 14px 40px rgba(0,0,0,.35);
-      --r: 18px;
+      --bg:#0b0f19;
+      --card:#121a2a;
+      --card2:#0f1626;
+      --text:#e9eefc;
+      --muted:#aab4d6;
+      --line:#233052;
+      --accent:#6d7cff;
+      --accent2:#14b8a6;
+      --danger:#ff4d6d;
+      --warning:#ffb020;
+      --ok:#29d17d;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
     }
-
-    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { height:100%; }
+    *{ box-sizing:border-box; }
     body{
       margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1400px 900px at 30% 10%, #162a56 0%, #0b1220 45%, #070b14 100%);
-      color: var(--text);
-      overflow-x:hidden;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1100px 700px at 20% -10%, rgba(109,124,255,.25), transparent 60%),
+                  radial-gradient(900px 600px at 100% 0%, rgba(20,184,166,.18), transparent 55%),
+                  var(--bg);
+      color:var(--text);
     }
-
-    /* melhora “encaixe” no mobile */
-    .safe{
-      padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+    .wrap{
       max-width: 980px;
       margin: 0 auto;
+      padding: 18px 14px 26px;
     }
-
     header{
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
       gap:12px;
-      padding-top: 8px;
-      margin-bottom: 10px;
-    }
-    .brand{
-      display:flex; align-items:center; gap:10px;
-      user-select:none;
-    }
-    .logo{
-      width: 40px; height: 40px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, rgba(96,165,250,.95), rgba(34,197,94,.75));
-      box-shadow: var(--shadow);
+      margin-bottom: 14px;
     }
     h1{
       margin:0;
-      font-size: clamp(18px, 4.5vw, 22px);
+      font-size: 22px;
       letter-spacing: .2px;
-      line-height: 1.1;
     }
     .sub{
-      margin:0;
-      color: var(--muted);
-      font-size: 12.5px;
-      margin-top: 2px;
+      margin-top:6px;
+      color:var(--muted);
+      font-size: 13px;
     }
-
     .pill{
       display:inline-flex;
-      gap:8px;
       align-items:center;
+      gap:8px;
       padding: 10px 12px;
-      border: 1px solid var(--stroke);
-      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
       border-radius: 999px;
-      font-size: 12.5px;
+      background: rgba(255,255,255,.03);
+      box-shadow: var(--shadow);
+      user-select:none;
+      white-space: nowrap;
+      font-size: 12px;
       color: var(--muted);
     }
     .dot{
-      width:8px; height:8px; border-radius:999px;
-      background: var(--ok);
-      box-shadow: 0 0 0 3px rgba(34,197,94,.15);
+      width:8px;height:8px;border-radius:99px;background: var(--ok);
+      box-shadow: 0 0 0 4px rgba(41,209,125,.12);
     }
-    .dot.off{ background: var(--danger); box-shadow: 0 0 0 3px rgba(239,68,68,.15); }
 
     .tabs{
       display:flex;
-      gap:8px;
-      margin: 12px 0 14px;
-      flex-wrap: wrap;
+      gap:10px;
+      padding: 8px;
+      background: rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: 999px;
+      width: fit-content;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
     }
     .tab{
-      flex: 1 1 auto;
-      min-width: 110px;
-      border: 1px solid var(--stroke);
-      background: rgba(255,255,255,.04);
+      border:0;
+      background: transparent;
       color: var(--muted);
-      padding: 10px 12px;
+      padding: 10px 14px;
       border-radius: 999px;
       cursor:pointer;
       font-weight: 600;
-      font-size: 13.5px;
-      transition: .15s ease;
+      letter-spacing: .2px;
     }
     .tab.active{
-      background: rgba(96,165,250,.16);
-      border-color: rgba(96,165,250,.35);
+      background: linear-gradient(135deg, rgba(109,124,255,.35), rgba(20,184,166,.20));
       color: var(--text);
+      border: 1px solid rgba(255,255,255,.10);
     }
 
     .grid{
       display:grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 14px;
     }
-    @media (min-width: 760px){
-      .grid{ grid-template-columns: 1.15fr .85fr; }
+    @media (max-width: 860px){
+      .grid{ grid-template-columns: 1fr; }
+      header{ flex-direction: column; }
+      .pill{ width: fit-content; }
     }
 
     .card{
-      background: var(--panel);
-      border: 1px solid var(--stroke);
-      border-radius: var(--r);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius);
       box-shadow: var(--shadow);
       overflow:hidden;
     }
-    .card-h{
-      padding: 14px 14px 12px;
+    .card .hd{
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
       display:flex;
+      align-items:center;
       justify-content:space-between;
-      align-items:flex-start;
-      gap: 10px;
-      border-bottom: 1px solid rgba(255,255,255,.06);
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.00));
+      gap:10px;
     }
-    .card-h h2{
+    .card .hd h2{
       margin:0;
-      font-size: 15.5px;
+      font-size: 16px;
       letter-spacing: .2px;
     }
-    .card-h p{
-      margin: 6px 0 0;
-      color: var(--muted);
-      font-size: 12.5px;
+    .card .bd{
+      padding: 14px;
     }
-    .card-b{ padding: 12px 14px 14px; }
+    .muted{ color: var(--muted); }
 
-    .row{
+    .btns{
       display:flex;
       gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
+      flex-wrap: wrap;
     }
-
-    .btn{
+    button, .btn{
       appearance:none;
-      border: 1px solid var(--stroke);
-      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
       color: var(--text);
       padding: 10px 12px;
       border-radius: 12px;
       cursor:pointer;
-      font-weight: 700;
-      font-size: 13.5px;
-      transition: .15s ease;
+      font-weight: 650;
+      letter-spacing: .15px;
+      box-shadow: 0 8px 18px rgba(0,0,0,.22);
+      transition: transform .06s ease, background .15s ease;
+      user-select:none;
     }
-    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.08); }
-    .btn.primary{
-      background: rgba(96,165,250,.18);
-      border-color: rgba(96,165,250,.35);
+    button:active, .btn:active{ transform: translateY(1px); }
+    .primary{
+      background: linear-gradient(135deg, rgba(109,124,255,.55), rgba(109,124,255,.25));
+      border-color: rgba(109,124,255,.55);
     }
-    .btn.danger{
-      background: rgba(239,68,68,.14);
-      border-color: rgba(239,68,68,.28);
+    .teal{
+      background: linear-gradient(135deg, rgba(20,184,166,.50), rgba(20,184,166,.18));
+      border-color: rgba(20,184,166,.55);
+    }
+    .danger{
+      background: linear-gradient(135deg, rgba(255,77,109,.55), rgba(255,77,109,.20));
+      border-color: rgba(255,77,109,.65);
+    }
+    .ghost{
+      background: transparent;
+      border-color: rgba(255,255,255,.12);
+      box-shadow:none;
     }
 
-    .input, select, textarea{
-      width:100%;
-      padding: 11px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--stroke);
-      background: rgba(0,0,0,.20);
-      color: var(--text);
-      outline:none;
-      font-size: 14px;
+    .dash{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
     }
-    textarea{ min-height: 86px; resize: vertical; }
+    .metric{
+      background: rgba(0,0,0,.16);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 14px;
+      padding: 14px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .metric .label{
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .metric .value{
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+
+    .list{
+      display:grid;
+      gap: 10px;
+    }
+    .item{
+      background: rgba(0,0,0,.16);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .item-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .item-name{
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+    .item-meta{
+      margin-top:6px;
+      color: var(--muted);
+      font-size: 12px;
+      display:flex;
+      flex-wrap: wrap;
+      gap: 10px 12px;
+    }
+    .chip{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .item-actions{
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content:flex-end;
+    }
+    .small{
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-weight: 750;
+      font-size: 12px;
+      box-shadow: none;
+    }
+
+    .hidden{ display:none !important; }
+
+    /* Modal */
+    .modal-backdrop{
+      position: fixed;
+      inset:0;
+      background: rgba(0,0,0,.65);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px 14px;
+      z-index: 50;
+    }
+    .modal{
+      width: min(560px, 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.12);
+      border-radius: 18px;
+      box-shadow: 0 22px 70px rgba(0,0,0,.55);
+      overflow:hidden;
+    }
+    .modal .mh{
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .modal .mh h3{
+      margin:0;
+      font-size: 15px;
+      letter-spacing:.2px;
+    }
+    .modal .mb{
+      padding: 14px;
+    }
 
     label{
       display:block;
-      font-size: 12.5px;
-      color: var(--muted);
       margin: 10px 0 6px;
-      font-weight: 600;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
     }
-
-    .kpis{
+    input, textarea, select{
+      width: 100%;
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      padding: 11px 12px;
+      outline:none;
+      font-size: 14px;
+    }
+    textarea{ min-height: 88px; resize: vertical; }
+    .row{
       display:grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
-    .kpi{
-      padding: 12px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.05);
+    @media (max-width: 520px){
+      .row{ grid-template-columns: 1fr; }
     }
-    .kpi .t{ font-size: 12.5px; color: var(--muted); font-weight: 700; }
-    .kpi .v{ margin-top: 6px; font-size: 18px; font-weight: 900; letter-spacing:.2px; }
-
-    .list{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
+    .footnote{
       margin-top: 10px;
-    }
-    .item{
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.18);
-      border-radius: 14px;
-      padding: 12px;
-      display:flex;
-      justify-content:space-between;
-      gap: 10px;
-      align-items:flex-start;
-    }
-    .item .left{ min-width: 0; }
-    .item .name{
-      font-weight: 900;
-      font-size: 14.5px;
-      line-height:1.2;
-      word-break: break-word;
-    }
-    .item .meta{
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: 12.5px;
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-    .badge{
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.04);
-      font-weight: 800;
       font-size: 12px;
-    }
-    .right{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-
-    .muted{
       color: var(--muted);
-      font-size: 12.5px;
-      margin-top: 8px;
+      line-height: 1.35;
     }
-
-    /* Modal */
-    .modal{
+    .hr{
+      height:1px;
+      background: rgba(255,255,255,.08);
+      margin: 10px 0;
+    }
+    .toast{
       position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.55);
+      left: 50%;
+      bottom: 16px;
+      transform: translateX(-50%);
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(0,0,0,.70);
+      border:1px solid rgba(255,255,255,.14);
+      color: var(--text);
       display:none;
-      align-items: flex-end;
-      justify-content:center;
-      padding: 16px;
-      z-index: 999;
-    }
-    .modal.open{ display:flex; }
-    .sheet{
-      width: min(720px, 100%);
-      border-radius: 22px;
-      background: rgba(15, 23, 42, .95);
-      border: 1px solid rgba(255,255,255,.12);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      max-height: 92vh;
-      display:flex;
-      flex-direction:column;
-    }
-    .sheet-h{
-      padding: 14px 14px 12px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      background: rgba(255,255,255,.03);
-    }
-    .sheet-h h3{ margin:0; font-size: 15.5px; }
-    .sheet-b{
-      padding: 12px 14px 14px;
-      overflow:auto;
-    }
-
-    .sep{ height: 1px; background: rgba(255,255,255,.08); margin: 10px 0; }
-
-    .empty{
-      padding: 12px;
-      border-radius: 14px;
-      border: 1px dashed rgba(255,255,255,.18);
-      color: rgba(255,255,255,.75);
-      background: rgba(255,255,255,.03);
-      font-size: 13px;
+      z-index: 60;
+      font-weight: 700;
+      letter-spacing: .2px;
     }
   </style>
 </head>
-
 <body>
-  <div class="safe">
+  <div class="wrap">
     <header>
-      <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div>
-          <h1>Controle de Vendas</h1>
-          <p class="sub">Produtos usados • Estoque • Lucro • Histórico</p>
-        </div>
+      <div>
+        <h1>Controle de Vendas</h1>
+        <div class="sub">Produtos usados • Estoque • Lucro • Histórico</div>
       </div>
-
-      <div class="pill" id="statusPill" title="Status de sincronização">
-        <span class="dot" id="statusDot"></span>
+      <div class="pill" id="pillStatus">
+        <span class="dot" id="dot"></span>
         <span id="statusText">Pronto</span>
       </div>
     </header>
 
-    <div class="tabs">
+    <div class="tabs" role="tablist">
       <button class="tab active" data-tab="estoque">Estoque</button>
       <button class="tab" data-tab="vender">Vender</button>
       <button class="tab" data-tab="historico">Histórico</button>
@@ -339,761 +360,731 @@
 
     <div class="grid">
       <!-- Coluna principal -->
-      <section class="card" id="mainCard">
-        <div class="card-h">
-          <div>
-            <h2 id="mainTitle">Estoque</h2>
-            <p id="mainDesc">Cadastre seus produtos e acompanhe o estoque.</p>
-          </div>
-          <div class="row">
-            <button class="btn primary" id="btnAdd">+ Cadastrar</button>
-            <button class="btn" id="btnBackup">Backup</button>
-            <button class="btn danger" id="btnReset">Limpar</button>
+      <div class="card" id="cardMain">
+        <div class="hd">
+          <h2 id="mainTitle">Estoque</h2>
+          <div class="btns">
+            <button class="primary" id="btnAdd">+ Cadastrar</button>
+            <button class="ghost" id="btnBackup">Backup</button>
+            <button class="danger" id="btnClear">Limpar</button>
           </div>
         </div>
-        <div class="card-b" id="mainBody">
-          <!-- conteúdo dinâmico -->
-        </div>
-      </section>
+        <div class="bd">
+          <div class="muted" id="mainDesc">Cadastre seus produtos e acompanhe o estoque.</div>
+          <div class="hr"></div>
 
-      <!-- Coluna lateral -->
-      <aside class="card">
-        <div class="card-h">
-          <div>
-            <h2>Dashboard</h2>
-            <p>Resumo geral do seu controle.</p>
-          </div>
-        </div>
-        <div class="card-b">
-          <div class="kpis">
-            <div class="kpi">
-              <div class="t">Itens em estoque</div>
-              <div class="v" id="kpiStock">0</div>
-            </div>
-            <div class="kpi">
-              <div class="t">Lucro (total)</div>
-              <div class="v" id="kpiProfit">R$ 0,00</div>
+          <div id="viewEstoque">
+            <div class="list" id="listEstoque"></div>
+            <div class="footnote">
+              • O app salva automaticamente.<br />
+              • No Kodular, a sincronização é feita via TinyDB (WebViewString).
             </div>
           </div>
 
-          <div class="sep"></div>
-
-          <div class="kpi">
-            <div class="t">Vendas (quantidade)</div>
-            <div class="v" id="kpiSalesCount">0</div>
+          <div id="viewVender" class="hidden">
+            <div class="row">
+              <div>
+                <label>Produto</label>
+                <select id="sellProduct"></select>
+              </div>
+              <div>
+                <label>Quantidade</label>
+                <input id="sellQty" type="number" min="1" step="1" inputmode="numeric" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label>Preço de venda (R$)</label>
+                <input id="sellPrice" type="number" min="0" step="0.01" inputmode="decimal" />
+              </div>
+              <div>
+                <label>Comprador / Observações</label>
+                <input id="sellBuyer" type="text" />
+              </div>
+            </div>
+            <div style="margin-top:12px" class="btns">
+              <button class="teal" id="btnConfirmSale">Confirmar venda</button>
+              <button class="ghost" id="btnGoEstoque2">Voltar ao estoque</button>
+            </div>
+            <div class="footnote" id="sellHint"></div>
           </div>
 
-          <p class="muted">
-            * O app salva automaticamente.<br/>
-            No Kodular, a sincronização é feita via TinyDB (WebViewString).
-          </p>
-        </div>
-      </aside>
-    </div>
-  </div>
+          <div id="viewHistorico" class="hidden">
+            <div class="list" id="listHistorico"></div>
+          </div>
 
-  <!-- Modal: cadastrar produto -->
-  <div class="modal" id="modalProduct">
-    <div class="sheet">
-      <div class="sheet-h">
-        <h3>Cadastrar produto</h3>
-        <button class="btn" id="closeProduct">Fechar</button>
+        </div>
       </div>
-      <div class="sheet-b">
-        <label>Nome do produto</label>
-        <input class="input" id="pName" placeholder="Ex.: iPhone 11 (usado)" />
 
-        <div class="row" style="gap:12px;">
-          <div style="flex:1 1 180px;">
+      <!-- Dashboard -->
+      <div class="card">
+        <div class="hd">
+          <h2>Dashboard</h2>
+        </div>
+        <div class="bd">
+          <div class="muted" style="margin-bottom:10px">Resumo geral do seu controle.</div>
+          <div class="dash">
+            <div class="metric">
+              <div>
+                <div class="label">Itens em estoque</div>
+                <div class="value" id="mStock">0</div>
+              </div>
+              <span class="chip">Unidades</span>
+            </div>
+            <div class="metric">
+              <div>
+                <div class="label">Lucro (total)</div>
+                <div class="value" id="mProfit">R$ 0,00</div>
+              </div>
+              <span class="chip">Acumulado</span>
+            </div>
+            <div class="metric">
+              <div>
+                <div class="label">Vendas (quantidade)</div>
+                <div class="value" id="mSales">0</div>
+              </div>
+              <span class="chip">Unidades</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- grid -->
+  </div><!-- wrap -->
+
+  <!-- Modal Produto -->
+  <div class="modal-backdrop" id="modalProduct">
+    <div class="modal">
+      <div class="mh">
+        <h3 id="productTitle">Cadastrar produto</h3>
+        <button class="ghost small" id="closeProduct">Fechar</button>
+      </div>
+      <div class="mb">
+        <input type="hidden" id="pId" />
+        <label>Nome do produto</label>
+        <input id="pName" type="text" />
+
+        <div class="row">
+          <div>
             <label>Preço de custo (R$)</label>
-            <input class="input" id="pCost" inputmode="decimal" placeholder="Ex.: 1200" />
+            <input id="pCost" type="number" min="0" step="0.01" inputmode="decimal" />
           </div>
-          <div style="flex:1 1 180px;">
+          <div>
             <label>Preço de venda sugerido (R$)</label>
-            <input class="input" id="pPrice" inputmode="decimal" placeholder="Ex.: 1800" />
+            <input id="pPrice" type="number" min="0" step="0.01" inputmode="decimal" />
           </div>
-          <div style="flex:1 1 120px;">
+        </div>
+
+        <div class="row">
+          <div>
             <label>Quantidade</label>
-            <input class="input" id="pQty" inputmode="numeric" placeholder="Ex.: 1" />
+            <input id="pQty" type="number" min="0" step="1" inputmode="numeric" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <div class="footnote" style="margin-top:2px">Dica: você pode editar depois.</div>
           </div>
         </div>
 
         <label>Observações</label>
-        <textarea class="input" id="pNotes" placeholder="Detalhes (estado, acessórios, etc.)"></textarea>
+        <textarea id="pNotes"></textarea>
 
-        <div class="row" style="margin-top:12px; justify-content:flex-end;">
-          <button class="btn primary" id="saveProduct">Salvar produto</button>
+        <div style="margin-top:12px" class="btns">
+          <button class="primary" id="saveProduct">Salvar produto</button>
+          <button class="ghost" id="cancelProduct">Cancelar</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal: vender -->
-  <div class="modal" id="modalSell">
-    <div class="sheet">
-      <div class="sheet-h">
-        <h3>Registrar venda</h3>
-        <button class="btn" id="closeSell">Fechar</button>
-      </div>
-      <div class="sheet-b">
-        <label>Produto</label>
-        <select class="input" id="sProduct"></select>
-
-        <div class="row" style="gap:12px;">
-          <div style="flex:1 1 120px;">
-            <label>Quantidade</label>
-            <input class="input" id="sQty" inputmode="numeric" placeholder="Ex.: 1" />
-          </div>
-          <div style="flex:1 1 180px;">
-            <label>Preço de venda (R$)</label>
-            <input class="input" id="sPrice" inputmode="decimal" placeholder="Ex.: 1800" />
-          </div>
-        </div>
-
-        <label>Comprador / Observações</label>
-        <textarea class="input" id="sNotes" placeholder="Nome, detalhes da venda, etc."></textarea>
-
-        <div class="row" style="margin-top:12px; justify-content:flex-end;">
-          <button class="btn primary" id="confirmSell">Confirmar venda</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Backup -->
-  <div class="modal" id="modalBackup">
-    <div class="sheet">
-      <div class="sheet-h">
+  <!-- Modal Backup -->
+  <div class="modal-backdrop" id="modalBackup">
+    <div class="modal">
+      <div class="mh">
         <h3>Backup</h3>
-        <button class="btn" id="closeBackup">Fechar</button>
+        <button class="ghost small" id="closeBackup">Fechar</button>
       </div>
-      <div class="sheet-b">
-        <div class="empty">
+      <div class="mb">
+        <div class="footnote">
           Copie esse texto e guarde. Se precisar restaurar, cole no campo abaixo e clique em “Restaurar”.
         </div>
-
-        <label style="margin-top:12px;">Backup (Base64)</label>
-        <textarea class="input" id="backupText"></textarea>
-
-        <div class="row" style="margin-top:12px; justify-content:flex-end;">
-          <button class="btn" id="copyBackup">Copiar</button>
-          <button class="btn primary" id="restoreBackup">Restaurar</button>
+        <label>Backup (Base64)</label>
+        <textarea id="backupText" spellcheck="false"></textarea>
+        <div style="margin-top:12px" class="btns">
+          <button class="ghost" id="btnCopyB64">Copiar</button>
+          <button class="teal" id="btnRestoreB64">Restaurar</button>
+        </div>
+        <div class="footnote">
+          * Esse Base64 é o mesmo que o Kodular salva no TinyDB.
         </div>
       </div>
     </div>
   </div>
 
-  <script>
-    /******************************************************************
-     * BASE64 (unicode safe)
-     ******************************************************************/
-    function b64EncodeUnicode(str) {
-      return btoa(unescape(encodeURIComponent(str)));
-    }
-    function b64DecodeUnicode(b64) {
-      return decodeURIComponent(escape(atob(b64)));
-    }
+  <div class="toast" id="toast"></div>
 
-    /******************************************************************
-     * ESTADO + PERSISTÊNCIA (LocalStorage + Kodular WebViewString)
-     ******************************************************************/
-    const STORAGE_KEY = "cvusados_state_v3";
-    let state = {
-      products: [], // {id, name, cost, price, qty, notes, createdAt}
-      sales: []     // {id, productId, productName, qty, price, cost, profit, notes, createdAt}
-    };
+<script>
+/* =========================
+   Estado + Persistência
+========================= */
+const STORAGE_KEY = "cvusados_state_v1";
 
-    let isApplyingExternalState = false;
-    let lastSentB64 = "";
-    let saveTimer = null;
+let state = {
+  v: 1,
+  updatedAt: Date.now(),
+  products: [],
+  sales: []
+};
 
-    function nowISO(){ return new Date().toISOString(); }
-    function uid(){
-      return Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+let lastSyncedB64 = "";
+let receivedKodularData = false;
+let applyingExternal = false;
+
+function now(){ return Date.now(); }
+function uid(){
+  return Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+}
+function moneyBRL(n){
+  const v = Number(n || 0);
+  return v.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+}
+function toNumber(v){
+  const n = Number(String(v ?? "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
+
+/* Base64 seguro p/ UTF-8 */
+function b64EncodeUnicode(str){
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+function b64DecodeUnicode(b64){
+  const bin = atob(b64);
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+function stateToB64(s){
+  return b64EncodeUnicode(JSON.stringify(s));
+}
+function b64ToState(b64){
+  const json = b64DecodeUnicode(b64);
+  return JSON.parse(json);
+}
+
+function loadFromLocalStorage(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const parsed = JSON.parse(raw);
+    if(!parsed || !parsed.products || !parsed.sales) return false;
+    state = parsed;
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+function saveToLocalStorage(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){}
+}
+
+/* Envia Base64 pro Kodular via WebViewString */
+function syncToKodular(){
+  try{
+    if(applyingExternal) return;
+    const b64 = stateToB64(state);
+    if(b64 === lastSyncedB64) return;
+    lastSyncedB64 = b64;
+
+    // Backup textarea
+    const bt = document.getElementById("backupText");
+    if(bt) bt.value = b64;
+
+    // Kodular / App Inventor bridge
+    if(window.AppInventor && typeof window.AppInventor.setWebViewString === "function"){
+      window.AppInventor.setWebViewString(b64);
+      setStatus("Salvo no TinyDB", true);
+    } else {
+      // Web: só mostra salvo local
+      setStatus("Salvo local", true);
     }
+  }catch(e){}
+}
 
-    function toNumberBR(v){
-      if (v == null) return 0;
-      const s = String(v).trim().replace(/\./g, "").replace(",", ".");
-      const n = Number(s);
-      return isFinite(n) ? n : 0;
-    }
-    function moneyBR(v){
-      const n = Number(v || 0);
-      return n.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
-    }
+function setStatus(text, ok){
+  const st = document.getElementById("statusText");
+  const dot = document.getElementById("dot");
+  if(st) st.textContent = text;
+  if(dot){
+    dot.style.background = ok ? getComputedStyle(document.documentElement).getPropertyValue("--ok") : getComputedStyle(document.documentElement).getPropertyValue("--warning");
+  }
+}
 
-    function exportState(){
-      return {
-        version: 3,
-        updatedAt: nowISO(),
-        products: state.products,
-        sales: state.sales
-      };
-    }
+function commit(reason){
+  state.updatedAt = now();
+  saveToLocalStorage();
+  syncToKodular();
+}
 
-    function importState(obj){
-      if (!obj || typeof obj !== "object") return false;
-      state.products = Array.isArray(obj.products) ? obj.products : [];
-      state.sales = Array.isArray(obj.sales) ? obj.sales : [];
+/* =========================
+   API para o Kodular
+   (Evaluate JS -> window.loadFromKodularB64("...."))
+========================= */
+window.loadFromKodularB64 = function(b64){
+  try{
+    if(!b64 || typeof b64 !== "string") return false;
+    receivedKodularData = true;
+    applyingExternal = true;
+
+    const incoming = b64ToState(b64);
+    if(incoming && incoming.products && incoming.sales){
+      state = incoming;
+      saveToLocalStorage(); // mantém também no web
+      renderAll();
+      // atualiza backup box e evita eco
+      lastSyncedB64 = b64;
+      const bt = document.getElementById("backupText");
+      if(bt) bt.value = b64;
+      toast("Dados restaurados");
+      setStatus("Restaurado", true);
       return true;
     }
+    return false;
+  }catch(e){
+    toast("Backup inválido");
+    return false;
+  }finally{
+    applyingExternal = false;
+  }
+};
 
-    function encodeStateToB64(){
-      const json = JSON.stringify(exportState());
-      return b64EncodeUnicode(json);
-    }
+// útil pra debug
+window.getCurrentB64 = () => stateToB64(state);
 
-    function decodeB64ToObj(b64){
-      const json = b64DecodeUnicode(b64);
-      return JSON.parse(json);
-    }
+/* =========================
+   UI / Render
+========================= */
+const $ = (sel) => document.querySelector(sel);
 
-    function setStatus(text, ok=true){
-      const dot = document.getElementById("statusDot");
-      const t = document.getElementById("statusText");
-      t.textContent = text;
-      dot.classList.toggle("off", !ok);
-    }
+const tabs = Array.from(document.querySelectorAll(".tab"));
+const mainTitle = $("#mainTitle");
+const mainDesc = $("#mainDesc");
 
-    function saveLocal(){
-      try{
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(exportState()));
-      }catch(e){}
-    }
+const viewEstoque = $("#viewEstoque");
+const viewVender = $("#viewVender");
+const viewHistorico = $("#viewHistorico");
 
-    function loadLocal(){
-      try{
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if(!raw) return false;
-        const obj = JSON.parse(raw);
-        return importState(obj);
-      }catch(e){
-        return false;
-      }
-    }
+const listEstoque = $("#listEstoque");
+const listHistorico = $("#listHistorico");
 
-    // Envia pro Kodular via WebViewString (se existir AppInventor)
-    function sendToKodular(b64){
-      try{
-        if (window.AppInventor && typeof window.AppInventor.setWebViewString === "function") {
-          window.AppInventor.setWebViewString(b64);
-          return true;
-        }
-      }catch(e){}
-      return false;
-    }
+const mStock = $("#mStock");
+const mProfit = $("#mProfit");
+const mSales = $("#mSales");
 
-    // Debounce de salvamento (evita “às vezes salva / às vezes não”)
-    function requestSave(reason=""){
-      if (isApplyingExternalState) return;
+const btnAdd = $("#btnAdd");
+const btnBackup = $("#btnBackup");
+const btnClear = $("#btnClear");
 
-      // Salva local sempre
-      saveLocal();
+const modalProduct = $("#modalProduct");
+const modalBackup = $("#modalBackup");
 
-      // Debounce para enviar ao Kodular
-      if (saveTimer) clearTimeout(saveTimer);
-      saveTimer = setTimeout(() => {
-        try{
-          const b64 = encodeStateToB64();
+const sellProduct = $("#sellProduct");
+const sellQty = $("#sellQty");
+const sellPrice = $("#sellPrice");
+const sellBuyer = $("#sellBuyer");
+const btnConfirmSale = $("#btnConfirmSale");
+const btnGoEstoque2 = $("#btnGoEstoque2");
+const sellHint = $("#sellHint");
 
-          // evita spam / loops
-          if (b64 === lastSentB64) {
-            setStatus("Pronto", true);
-            return;
-          }
+function toast(msg){
+  const t = $("#toast");
+  if(!t) return;
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(()=>{ t.style.display="none"; }, 1800);
+}
 
-          lastSentB64 = b64;
-          setStatus("Salvando…", true);
+function setActiveTab(name){
+  tabs.forEach(b => b.classList.toggle("active", b.dataset.tab === name));
 
-          // tenta enviar ao Kodular
-          const sent = sendToKodular(b64);
-          setTimeout(() => {
-            setStatus(sent ? "Salvo" : "Salvo (local)", true);
-          }, 120);
+  viewEstoque.classList.toggle("hidden", name !== "estoque");
+  viewVender.classList.toggle("hidden", name !== "vender");
+  viewHistorico.classList.toggle("hidden", name !== "historico");
 
-        }catch(e){
-          setStatus("Erro ao salvar", false);
-        }
-      }, 450);
-    }
+  if(name === "estoque"){
+    mainTitle.textContent = "Estoque";
+    mainDesc.textContent = "Cadastre seus produtos e acompanhe o estoque.";
+    btnAdd.classList.remove("hidden");
+    btnBackup.classList.remove("hidden");
+    btnClear.classList.remove("hidden");
+  }
+  if(name === "vender"){
+    mainTitle.textContent = "Vender";
+    mainDesc.textContent = "Registre vendas e acompanhe seu lucro.";
+    btnAdd.classList.add("hidden");
+    btnBackup.classList.add("hidden");
+    btnClear.classList.add("hidden");
+    refreshSellForm();
+  }
+  if(name === "historico"){
+    mainTitle.textContent = "Histórico";
+    mainDesc.textContent = "Veja todas as vendas registradas.";
+    btnAdd.classList.add("hidden");
+    btnBackup.classList.remove("hidden");
+    btnClear.classList.remove("hidden");
+  }
+}
 
-    /******************************************************************
-     * HANDSHAKE PARA O KODULAR INJETAR O B64 (TinyDB -> Evaluate JS)
-     * Kodular vai chamar: window.loadFromKodularB64("...b64...")
-     ******************************************************************/
-    window.loadFromKodularB64 = function(b64){
-      try{
-        if (!b64 || typeof b64 !== "string") return false;
+tabs.forEach(btn=>{
+  btn.addEventListener("click", ()=> setActiveTab(btn.dataset.tab));
+});
 
-        isApplyingExternalState = true;
-        const obj = decodeB64ToObj(b64);
-        const ok = importState(obj);
+function calcMetrics(){
+  const stockUnits = state.products.reduce((a,p)=> a + (Number(p.qty)||0), 0);
+  const totalProfit = state.sales.reduce((a,s)=> a + (Number(s.profit)||0), 0);
+  const salesUnits = state.sales.reduce((a,s)=> a + (Number(s.qty)||0), 0);
 
-        // atualizar local + UI
-        saveLocal();
+  mStock.textContent = stockUnits;
+  mProfit.textContent = moneyBRL(totalProfit);
+  mSales.textContent = salesUnits;
+}
 
-        // importante: setar lastSentB64 para não re-enviar e criar loop
-        lastSentB64 = b64;
+function renderEstoque(){
+  listEstoque.innerHTML = "";
+  if(state.products.length === 0){
+    listEstoque.innerHTML = `<div class="item">
+      <div class="item-name">Nenhum produto ainda.</div>
+      <div class="item-meta"><span class="chip">Clique em “+ Cadastrar” para começar</span></div>
+    </div>`;
+    return;
+  }
 
-        renderAll();
-        setStatus("Dados carregados", true);
-
-        return ok;
-      }catch(e){
-        setStatus("Falha ao carregar", false);
-        return false;
-      }finally{
-        // pequena folga
-        setTimeout(() => { isApplyingExternalState = false; }, 120);
-      }
-    };
-
-    /******************************************************************
-     * UI / RENDER
-     ******************************************************************/
-    const mainTitle = document.getElementById("mainTitle");
-    const mainDesc  = document.getElementById("mainDesc");
-    const mainBody  = document.getElementById("mainBody");
-
-    let activeTab = "estoque";
-
-    function renderAll(){
-      renderKPIs();
-      renderTab();
-      refreshSellSelect();
-    }
-
-    function renderKPIs(){
-      const totalStock = state.products.reduce((acc,p)=>acc + (Number(p.qty)||0), 0);
-      const totalProfit = state.sales.reduce((acc,s)=>acc + (Number(s.profit)||0), 0);
-      document.getElementById("kpiStock").textContent = totalStock;
-      document.getElementById("kpiProfit").textContent = moneyBR(totalProfit);
-      document.getElementById("kpiSalesCount").textContent = state.sales.length;
-    }
-
-    function renderTab(){
-      if (activeTab === "estoque"){
-        mainTitle.textContent = "Estoque";
-        mainDesc.textContent  = "Cadastre seus produtos e acompanhe o estoque.";
-        renderStock();
-      } else if (activeTab === "vender"){
-        mainTitle.textContent = "Vender";
-        mainDesc.textContent  = "Registre vendas e acompanhe seu lucro.";
-        renderSell();
-      } else {
-        mainTitle.textContent = "Histórico";
-        mainDesc.textContent  = "Veja todas as vendas registradas.";
-        renderHistory();
-      }
-    }
-
-    function renderStock(){
-      const list = document.createElement("div");
-      list.className = "list";
-
-      const products = [...state.products].sort((a,b)=> (b.createdAt||"").localeCompare(a.createdAt||""));
-
-      if (products.length === 0){
-        list.innerHTML = `<div class="empty">Nenhum produto cadastrado. Clique em “+ Cadastrar”.</div>`;
-        mainBody.innerHTML = "";
-        mainBody.appendChild(list);
-        return;
-      }
-
-      for (const p of products){
-        const el = document.createElement("div");
-        el.className = "item";
-        el.innerHTML = `
-          <div class="left">
-            <div class="name">${escapeHtml(p.name || "Produto")}</div>
-            <div class="meta">
-              <span class="badge">Qtd: ${Number(p.qty)||0}</span>
-              <span class="badge">Custo: ${moneyBR(p.cost||0)}</span>
-              <span class="badge">Sug.: ${moneyBR(p.price||0)}</span>
-            </div>
-            ${p.notes ? `<div class="muted">${escapeHtml(p.notes)}</div>` : ""}
+  // ordena por nome
+  const products = [...state.products].sort((a,b)=> (a.name||"").localeCompare(b.name||""));
+  for(const p of products){
+    const el = document.createElement("div");
+    el.className = "item";
+    el.innerHTML = `
+      <div class="item-top">
+        <div>
+          <div class="item-name">${escapeHtml(p.name || "")}</div>
+          <div class="item-meta">
+            <span class="chip">Qtd: <b style="color:var(--text)">${Number(p.qty)||0}</b></span>
+            <span class="chip">Custo: <b style="color:var(--text)">${moneyBRL(p.cost)}</b></span>
+            <span class="chip">Venda: <b style="color:var(--text)">${moneyBRL(p.price)}</b></span>
           </div>
-          <div class="right">
-            <button class="btn" data-act="edit" data-id="${p.id}">Editar</button>
-            <button class="btn danger" data-act="del" data-id="${p.id}">Excluir</button>
-          </div>
-        `;
-        list.appendChild(el);
-      }
-
-      mainBody.innerHTML = "";
-      mainBody.appendChild(list);
-
-      list.addEventListener("click", (e)=>{
-        const btn = e.target.closest("button");
-        if(!btn) return;
-        const id = btn.getAttribute("data-id");
-        const act = btn.getAttribute("data-act");
-        if (act === "del") deleteProduct(id);
-        if (act === "edit") openProductModal(id);
-      }, { once:true });
-    }
-
-    function renderSell(){
-      const wrap = document.createElement("div");
-      wrap.innerHTML = `
-        <div class="empty">
-          Clique em “Registrar venda” e escolha o produto.
-          <div class="muted">Dica: você pode ajustar o preço de venda na hora.</div>
+          ${p.notes ? `<div class="footnote" style="margin-top:8px">${escapeHtml(p.notes)}</div>` : ``}
         </div>
-        <div style="margin-top:12px;">
-          <button class="btn primary" id="btnOpenSell">Registrar venda</button>
+        <div class="item-actions">
+          <button class="small teal" data-act="sell">Vender</button>
+          <button class="small" data-act="edit">Editar</button>
+          <button class="small danger" data-act="del">Excluir</button>
         </div>
-      `;
-      mainBody.innerHTML = "";
-      mainBody.appendChild(wrap);
+      </div>
+    `;
+    el.querySelector('[data-act="sell"]').addEventListener("click", ()=>{
+      setActiveTab("vender");
+      sellProduct.value = p.id;
+      refreshSellForm(true);
+    });
+    el.querySelector('[data-act="edit"]').addEventListener("click", ()=> openProductModal(p));
+    el.querySelector('[data-act="del"]').addEventListener("click", ()=> deleteProduct(p.id));
+    listEstoque.appendChild(el);
+  }
+}
 
-      wrap.querySelector("#btnOpenSell").addEventListener("click", ()=>{
-        openSellModal();
-      });
-    }
+function renderHistorico(){
+  listHistorico.innerHTML = "";
+  if(state.sales.length === 0){
+    listHistorico.innerHTML = `<div class="item">
+      <div class="item-name">Nenhuma venda registrada.</div>
+      <div class="item-meta"><span class="chip">Use a aba “Vender”</span></div>
+    </div>`;
+    return;
+  }
 
-    function renderHistory(){
-      const list = document.createElement("div");
-      list.className = "list";
-
-      const sales = [...state.sales].sort((a,b)=> (b.createdAt||"").localeCompare(a.createdAt||""));
-
-      if (sales.length === 0){
-        list.innerHTML = `<div class="empty">Nenhuma venda registrada ainda.</div>`;
-        mainBody.innerHTML = "";
-        mainBody.appendChild(list);
-        return;
-      }
-
-      for (const s of sales){
-        const el = document.createElement("div");
-        el.className = "item";
-        el.innerHTML = `
-          <div class="left">
-            <div class="name">${escapeHtml(s.productName || "Venda")}</div>
-            <div class="meta">
-              <span class="badge">Qtd: ${Number(s.qty)||0}</span>
-              <span class="badge">Venda: ${moneyBR(s.price||0)}</span>
-              <span class="badge">Lucro: ${moneyBR(s.profit||0)}</span>
-            </div>
-            ${s.notes ? `<div class="muted">${escapeHtml(s.notes)}</div>` : ""}
-            <div class="muted">${formatDate(s.createdAt)}</div>
+  const sales = [...state.sales].sort((a,b)=> (b.date||0) - (a.date||0));
+  for(const s of sales){
+    const dt = new Date(s.date || Date.now());
+    const dateStr = dt.toLocaleString("pt-BR");
+    const el = document.createElement("div");
+    el.className = "item";
+    el.innerHTML = `
+      <div class="item-top">
+        <div>
+          <div class="item-name">${escapeHtml(s.productName || "Venda")}</div>
+          <div class="item-meta">
+            <span class="chip">Qtd: <b style="color:var(--text)">${Number(s.qty)||0}</b></span>
+            <span class="chip">Preço: <b style="color:var(--text)">${moneyBRL(s.price)}</b></span>
+            <span class="chip">Lucro: <b style="color:var(--text)">${moneyBRL(s.profit)}</b></span>
+            <span class="chip">${dateStr}</span>
           </div>
-          <div class="right">
-            <button class="btn danger" data-act="delSale" data-id="${s.id}">Excluir</button>
-          </div>
-        `;
-        list.appendChild(el);
-      }
+          ${s.buyer ? `<div class="footnote" style="margin-top:8px">${escapeHtml(s.buyer)}</div>` : ``}
+        </div>
+        <div class="item-actions">
+          <button class="small danger" data-act="del">Remover</button>
+        </div>
+      </div>
+    `;
+    el.querySelector('[data-act="del"]').addEventListener("click", ()=> deleteSale(s.id));
+    listHistorico.appendChild(el);
+  }
+}
 
-      mainBody.innerHTML = "";
-      mainBody.appendChild(list);
+function renderAll(){
+  calcMetrics();
+  renderEstoque();
+  renderHistorico();
+  refreshSellOptions();
+}
 
-      list.addEventListener("click", (e)=>{
-        const btn = e.target.closest("button");
-        if(!btn) return;
-        if (btn.getAttribute("data-act") === "delSale"){
-          deleteSale(btn.getAttribute("data-id"));
-        }
-      }, { once:true });
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, (m)=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+
+/* =========================
+   Produto: CRUD
+========================= */
+function openProductModal(p){
+  $("#pId").value = p?.id || "";
+  $("#pName").value = p?.name || "";
+  $("#pCost").value = (p?.cost ?? "");
+  $("#pPrice").value = (p?.price ?? "");
+  $("#pQty").value = (p?.qty ?? 1);
+  $("#pNotes").value = p?.notes || "";
+  $("#productTitle").textContent = p ? "Editar produto" : "Cadastrar produto";
+  modalProduct.style.display = "flex";
+  setTimeout(()=> $("#pName").focus(), 50);
+}
+
+function closeProductModal(){
+  modalProduct.style.display = "none";
+}
+
+function upsertProduct(){
+  const id = $("#pId").value || uid();
+  const name = $("#pName").value.trim();
+  const cost = toNumber($("#pCost").value);
+  const price = toNumber($("#pPrice").value);
+  const qty = Math.max(0, Math.floor(toNumber($("#pQty").value)));
+  const notes = $("#pNotes").value.trim();
+
+  if(!name){
+    toast("Informe o nome do produto");
+    $("#pName").focus();
+    return;
+  }
+
+  const idx = state.products.findIndex(p=> p.id === id);
+  const obj = { id, name, cost, price, qty, notes, updatedAt: now() };
+
+  if(idx >= 0){
+    state.products[idx] = { ...state.products[idx], ...obj };
+    toast("Produto atualizado");
+  }else{
+    state.products.push({ ...obj, createdAt: now() });
+    toast("Produto cadastrado");
+  }
+
+  closeProductModal();
+  renderAll();
+  commit("product");
+}
+
+function deleteProduct(id){
+  const p = state.products.find(x=>x.id===id);
+  if(!p) return;
+  if(!confirm(`Excluir "${p.name}"?`)) return;
+
+  // remove também vendas relacionadas? (mantém histórico, então não apaga vendas)
+  state.products = state.products.filter(x=>x.id!==id);
+  renderAll();
+  commit("deleteProduct");
+  toast("Produto removido");
+}
+
+btnAdd.addEventListener("click", ()=> openProductModal(null));
+$("#closeProduct").addEventListener("click", closeProductModal);
+$("#cancelProduct").addEventListener("click", closeProductModal);
+$("#saveProduct").addEventListener("click", upsertProduct);
+
+modalProduct.addEventListener("click", (e)=>{
+  if(e.target === modalProduct) closeProductModal();
+});
+
+/* =========================
+   Vender
+========================= */
+function refreshSellOptions(){
+  const current = sellProduct.value;
+  sellProduct.innerHTML = "";
+  const products = [...state.products].filter(p=> (Number(p.qty)||0) > 0)
+    .sort((a,b)=> (a.name||"").localeCompare(b.name||""));
+  if(products.length === 0){
+    sellProduct.innerHTML = `<option value="">(Sem estoque)</option>`;
+  }else{
+    for(const p of products){
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = `${p.name} (Qtd: ${Number(p.qty)||0})`;
+      sellProduct.appendChild(opt);
     }
+  }
+  // tenta manter seleção
+  if(current && products.some(p=>p.id===current)) sellProduct.value = current;
+}
 
-    function refreshSellSelect(){
-      const sel = document.getElementById("sProduct");
-      if (!sel) return;
+function refreshSellForm(keepQty){
+  refreshSellOptions();
+  const id = sellProduct.value;
+  const p = state.products.find(x=>x.id===id);
+  if(!p){
+    sellQty.value = "";
+    sellPrice.value = "";
+    sellBuyer.value = "";
+    sellHint.textContent = "Você precisa ter estoque para registrar uma venda.";
+    btnConfirmSale.disabled = true;
+    return;
+  }
+  btnConfirmSale.disabled = false;
+  if(!keepQty) sellQty.value = 1;
+  sellPrice.value = p.price ?? 0;
+  sellHint.textContent = `Em estoque: ${Number(p.qty)||0} • Custo: ${moneyBRL(p.cost)} • Venda sugerida: ${moneyBRL(p.price)}`;
+}
 
-      const inStock = state.products.filter(p => (Number(p.qty)||0) > 0);
-      sel.innerHTML = "";
+sellProduct.addEventListener("change", ()=> refreshSellForm(false));
 
-      if (inStock.length === 0){
-        const opt = document.createElement("option");
-        opt.value = "";
-        opt.textContent = "Nenhum produto com estoque";
-        sel.appendChild(opt);
-        return;
-      }
+function confirmSale(){
+  const id = sellProduct.value;
+  const p = state.products.find(x=>x.id===id);
+  if(!p){ toast("Selecione um produto"); return; }
 
-      for (const p of inStock){
-        const opt = document.createElement("option");
-        opt.value = p.id;
-        opt.textContent = `${p.name} (Qtd: ${Number(p.qty)||0})`;
-        sel.appendChild(opt);
-      }
-    }
+  const qty = Math.max(1, Math.floor(toNumber(sellQty.value)));
+  if(qty > (Number(p.qty)||0)){
+    toast("Quantidade maior que o estoque");
+    return;
+  }
 
-    function formatDate(iso){
-      try{
-        if(!iso) return "";
-        const d = new Date(iso);
-        return d.toLocaleString("pt-BR");
-      }catch(e){
-        return "";
-      }
-    }
+  const price = Math.max(0, toNumber(sellPrice.value));
+  const buyer = sellBuyer.value.trim();
 
-    function escapeHtml(str){
-      return String(str).replace(/[&<>"']/g, s => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-      }[s]));
-    }
+  const profit = (price - toNumber(p.cost)) * qty;
 
-    /******************************************************************
-     * AÇÕES: Produtos / Vendas
-     ******************************************************************/
-    function openProductModal(editId=null){
-      const modal = document.getElementById("modalProduct");
-      modal.classList.add("open");
+  // baixa estoque
+  p.qty = (Number(p.qty)||0) - qty;
+  p.updatedAt = now();
 
-      const pName = document.getElementById("pName");
-      const pCost = document.getElementById("pCost");
-      const pPrice= document.getElementById("pPrice");
-      const pQty  = document.getElementById("pQty");
-      const pNotes= document.getElementById("pNotes");
+  // registra venda
+  state.sales.push({
+    id: uid(),
+    productId: p.id,
+    productName: p.name,
+    qty,
+    price,
+    buyer,
+    date: now(),
+    profit
+  });
 
-      modal.dataset.editId = editId || "";
+  renderAll();
+  commit("sale");
+  toast("Venda registrada");
+  sellBuyer.value = "";
+  refreshSellForm(false);
+}
 
-      if (editId){
-        const p = state.products.find(x => x.id === editId);
-        pName.value  = p?.name || "";
-        pCost.value  = (p?.cost ?? "");
-        pPrice.value = (p?.price ?? "");
-        pQty.value   = (p?.qty ?? "");
-        pNotes.value = p?.notes || "";
-      } else {
-        pName.value=""; pCost.value=""; pPrice.value=""; pQty.value="1"; pNotes.value="";
-      }
-    }
+btnConfirmSale.addEventListener("click", confirmSale);
+btnGoEstoque2.addEventListener("click", ()=> setActiveTab("estoque"));
 
-    function closeProductModal(){
-      document.getElementById("modalProduct").classList.remove("open");
-    }
+function deleteSale(id){
+  if(!confirm("Remover essa venda do histórico?")) return;
+  state.sales = state.sales.filter(s=>s.id!==id);
+  renderAll();
+  commit("deleteSale");
+  toast("Venda removida");
+}
 
-    function saveProduct(){
-      const modal = document.getElementById("modalProduct");
-      const editId = modal.dataset.editId || "";
+/* =========================
+   Backup / Limpar
+========================= */
+function openBackup(){
+  $("#backupText").value = stateToB64(state);
+  modalBackup.style.display = "flex";
+}
+function closeBackup(){
+  modalBackup.style.display = "none";
+}
+btnBackup.addEventListener("click", openBackup);
+$("#closeBackup").addEventListener("click", closeBackup);
+modalBackup.addEventListener("click", (e)=>{
+  if(e.target === modalBackup) closeBackup();
+});
 
-      const name  = document.getElementById("pName").value.trim();
-      const cost  = toNumberBR(document.getElementById("pCost").value);
-      const price = toNumberBR(document.getElementById("pPrice").value);
-      const qty   = Math.max(0, parseInt(document.getElementById("pQty").value || "0", 10) || 0);
-      const notes = document.getElementById("pNotes").value.trim();
+$("#btnCopyB64").addEventListener("click", async ()=>{
+  const text = $("#backupText").value.trim();
+  if(!text){ toast("Nada para copiar"); return; }
+  try{
+    await navigator.clipboard.writeText(text);
+    toast("Copiado!");
+  }catch(e){
+    $("#backupText").select();
+    document.execCommand("copy");
+    toast("Copiado!");
+  }
+});
 
-      if (!name){
-        alert("Informe o nome do produto.");
-        return;
-      }
+$("#btnRestoreB64").addEventListener("click", ()=>{
+  const b64 = $("#backupText").value.trim();
+  if(!b64){ toast("Cole um Base64"); return; }
+  if(!confirm("Restaurar esse backup? Isso vai substituir os dados atuais.")) return;
+  const ok = window.loadFromKodularB64(b64); // reaproveita a função (aplica + render)
+  if(ok){
+    closeBackup();
+    commit("restore"); // garante que sincroniza também
+  }
+});
 
-      if (editId){
-        const p = state.products.find(x => x.id === editId);
-        if (!p) return;
-        p.name = name; p.cost = cost; p.price = price; p.qty = qty; p.notes = notes;
-      } else {
-        state.products.push({
-          id: uid(),
-          name, cost, price, qty, notes,
-          createdAt: nowISO()
-        });
-      }
+btnClear.addEventListener("click", ()=>{
+  if(!confirm("Isso vai apagar TUDO (estoque + histórico). Continuar?")) return;
+  state.products = [];
+  state.sales = [];
+  renderAll();
+  commit("clear");
+  toast("Dados apagados");
+});
 
-      closeProductModal();
-      renderAll();
-      requestSave("produto");
-    }
+/* =========================
+   Inicialização
+========================= */
+function init(){
+  // 1) tenta carregar do localStorage (web)
+  loadFromLocalStorage();
+  renderAll();
 
-    function deleteProduct(id){
-      const p = state.products.find(x => x.id === id);
-      if(!p) return;
-      if (!confirm(`Excluir "${p.name}"?`)) return;
+  // 2) prepara Base64 no backup
+  $("#backupText").value = stateToB64(state);
 
-      // remove produto e também remove vendas associadas? (opcional)
-      state.products = state.products.filter(x => x.id !== id);
-      state.sales = state.sales.filter(s => s.productId !== id);
-
-      renderAll();
-      requestSave("deleteProduct");
-    }
-
-    function openSellModal(){
-      refreshSellSelect();
-
-      const modal = document.getElementById("modalSell");
-      modal.classList.add("open");
-
-      document.getElementById("sQty").value = "1";
-      document.getElementById("sPrice").value = "";
-      document.getElementById("sNotes").value = "";
-
-      // sugere preço baseado no produto selecionado
-      const sel = document.getElementById("sProduct");
-      const id = sel.value;
-      const p = state.products.find(x => x.id === id);
-      if (p && p.price != null) document.getElementById("sPrice").value = String(p.price);
-    }
-
-    function closeSellModal(){
-      document.getElementById("modalSell").classList.remove("open");
-    }
-
-    function confirmSell(){
-      const productId = document.getElementById("sProduct").value;
-      const p = state.products.find(x => x.id === productId);
-
-      if (!p || (Number(p.qty)||0) <= 0){
-        alert("Selecione um produto com estoque.");
-        return;
-      }
-
-      const qty = Math.max(1, parseInt(document.getElementById("sQty").value || "1", 10) || 1);
-      if (qty > (Number(p.qty)||0)){
-        alert("Quantidade maior que o estoque.");
-        return;
-      }
-
-      const price = toNumberBR(document.getElementById("sPrice").value);
-      const notes = document.getElementById("sNotes").value.trim();
-
-      const unitCost = Number(p.cost)||0;
-      const profit = (price - unitCost) * qty;
-
-      // baixa estoque
-      p.qty = (Number(p.qty)||0) - qty;
-
-      // registra venda
-      state.sales.push({
-        id: uid(),
-        productId: p.id,
-        productName: p.name,
-        qty,
-        price,
-        cost: unitCost,
-        profit,
-        notes,
-        createdAt: nowISO()
-      });
-
-      closeSellModal();
-      renderAll();
-      requestSave("sell");
-    }
-
-    function deleteSale(id){
-      const s = state.sales.find(x => x.id === id);
-      if (!s) return;
-      if (!confirm(`Excluir venda de "${s.productName}"?`)) return;
-
-      // opcional: devolver ao estoque
-      const p = state.products.find(x => x.id === s.productId);
-      if (p) p.qty = (Number(p.qty)||0) + (Number(s.qty)||0);
-
-      state.sales = state.sales.filter(x => x.id !== id);
-
-      renderAll();
-      requestSave("deleteSale");
-    }
-
-    /******************************************************************
-     * BACKUP / RESET
-     ******************************************************************/
-    function openBackup(){
-      const modal = document.getElementById("modalBackup");
-      modal.classList.add("open");
-      document.getElementById("backupText").value = encodeStateToB64();
-    }
-    function closeBackup(){
-      document.getElementById("modalBackup").classList.remove("open");
-    }
-    function copyBackup(){
-      const t = document.getElementById("backupText");
-      t.select();
-      document.execCommand("copy");
-      setStatus("Backup copiado", true);
-      setTimeout(()=>setStatus("Pronto", true), 900);
-    }
-    function restoreBackup(){
-      const b64 = document.getElementById("backupText").value.trim();
-      if (!b64) return;
-      try{
-        isApplyingExternalState = true;
-        const obj = decodeB64ToObj(b64);
-        importState(obj);
-        saveLocal();
-        lastSentB64 = b64;
-        renderAll();
-        requestSave("restore");
-        closeBackup();
-      }catch(e){
-        alert("Backup inválido.");
-      }finally{
-        setTimeout(()=>{ isApplyingExternalState=false; }, 150);
-      }
-    }
-
-    function resetAll(){
-      if(!confirm("Isso vai apagar tudo. Deseja continuar?")) return;
-      state = { products: [], sales: [] };
-      saveLocal();
-      lastSentB64 = encodeStateToB64();
-      renderAll();
-      requestSave("reset");
-    }
-
-    /******************************************************************
-     * TABS / EVENTOS
-     ******************************************************************/
-    document.querySelectorAll(".tab").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-        btn.classList.add("active");
-        activeTab = btn.dataset.tab;
-        renderTab();
-      });
-    });
-
-    document.getElementById("btnAdd").addEventListener("click", ()=>openProductModal());
-    document.getElementById("btnBackup").addEventListener("click", openBackup);
-    document.getElementById("btnReset").addEventListener("click", resetAll);
-
-    document.getElementById("closeProduct").addEventListener("click", closeProductModal);
-    document.getElementById("saveProduct").addEventListener("click", saveProduct);
-
-    document.getElementById("closeSell").addEventListener("click", closeSellModal);
-    document.getElementById("confirmSell").addEventListener("click", confirmSell);
-
-    document.getElementById("closeBackup").addEventListener("click", closeBackup);
-    document.getElementById("copyBackup").addEventListener("click", copyBackup);
-    document.getElementById("restoreBackup").addEventListener("click", restoreBackup);
-
-    // fechar modal clicando fora
-    document.querySelectorAll(".modal").forEach(m=>{
-      m.addEventListener("click", (e)=>{
-        if (e.target === m) m.classList.remove("open");
-      });
-    });
-
-    // Atualiza sugestão de preço na venda quando muda produto
-    document.getElementById("sProduct").addEventListener("change", ()=>{
-      const id = document.getElementById("sProduct").value;
-      const p = state.products.find(x => x.id === id);
-      if (p) document.getElementById("sPrice").value = String(p.price ?? "");
-    });
-
-    /******************************************************************
-     * INIT
-     ******************************************************************/
-    (function init(){
-      // carrega do localStorage (browser)
-      loadLocal();
-      renderAll();
-
-      // se estiver no Kodular, o TinyDB vai injetar depois pelo Evaluate JS:
-      // window.loadFromKodularB64("...")
-
+  // 3) MUITO IMPORTANTE:
+  //    não mandar WebViewString logo no início, pra não sobrescrever o TinyDB antes de você restaurar.
+  //    se o Kodular chamar loadFromKodularB64 em até ~2s, ele ganha prioridade.
+  setTimeout(()=>{
+    if(!receivedKodularData){
+      // se não veio nada do Kodular, sincroniza o que está aqui (localStorage/estado atual)
+      syncToKodular();
       setStatus("Pronto", true);
-      // primeira gravação “segura”
-      requestSave("init");
-    })();
-  </script>
+    }
+  }, 2000);
+
+  setActiveTab("estoque");
+}
+
+init();
+</script>
 </body>
 </html>
