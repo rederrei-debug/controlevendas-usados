@@ -314,8 +314,11 @@
     <section id="cadastro" class="card screen hidden">
       <input id="nomeProduto" placeholder="Nome do produto" />
       <input id="valorCompra" type="number" inputmode="decimal" placeholder="Valor de compra" />
-      <input type="file" accept="image/*" onchange="carregarImagem(event)" />
+      <input id="fotoProduto" type="file" accept="image/*" />
       <button class="action" type="button" onclick="cadastrar()">Cadastrar Produto</button>
+      <div style="margin-top:10px; font-size:13px; opacity:.8;">
+        Dica: fotos são comprimidas. Se você cadastrar MUITAS fotos, o app pode remover as imagens para não perder os itens.
+      </div>
     </section>
 
     <!-- VENDA -->
@@ -338,15 +341,27 @@
   <script>
     const $ = (id) => document.getElementById(id);
 
+    // ====== CONFIG ======
+    const LOCAL_KEY = "cv_state_v2";
+    const MAX_B64_LEN = 650000; // proteção: se passar disso, removemos imagens para não perder dados
+    const SYNC_DEBOUNCE_MS = 700;
+
+    // ====== STATE ======
     let estoque = [];
     let historico = [];
     let lucroTotal = 0;
     let imagemTemp = null;
 
-    // evita loop quando os dados vêm do Kodular
-    let isHydratingFromKodular = false;
+    let syncTimer = null;
+    let lastSent = "";
+    let isApplyingRemote = false;
 
-    /* ===== Base64 seguro p/ PT-BR (UTF-8) ===== */
+    // ====== HELPERS ======
+    function makeId(){
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return "id_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+    }
+
     function toB64(str){
       return btoa(unescape(encodeURIComponent(str)));
     }
@@ -354,99 +369,197 @@
       return decodeURIComponent(escape(atob(b64)));
     }
 
-    /* ===== Envia backup pro Kodular (dispara WebViewStringChanged) ===== */
-    function enviarParaKodularB64(){
-      try{
-        const payload = JSON.stringify({ estoque, historico, lucroTotal });
-        const b64 = toB64(payload);
-
-        // Kodular/AppInventor
-        if(window.AppInventor && window.AppInventor.setWebViewString){
-          window.AppInventor.setWebViewString(b64);
-        }
-      }catch(e){
-        // Se imagem ficar grande demais, pode estourar limite
-        console.log("Erro ao enviar p/ Kodular:", e);
-      }
+    function serializeState(){
+      return {
+        version: 2,
+        updatedAt: Date.now(),
+        estoque,
+        historico,
+        lucroTotal
+      };
     }
 
-    /* ===== Recebe backup do Kodular (PageLoaded -> EvaluateJS chama isso) ===== */
-    window.loadFromKodularB64 = function(b64){
-      try{
-        isHydratingFromKodular = true;
-
-        const payload = fromB64(b64);
-        const d = JSON.parse(payload);
-
-        estoque = d.estoque || [];
-        historico = d.historico || [];
-        lucroTotal = parseFloat(d.lucroTotal) || 0;
-
-        // salva local também (pra quando abrir no navegador)
-        salvarDadosLocalOnly();
-
-        atualizarDashboard();
-        atualizarHistorico();
-      }catch(e){
-        console.log("Erro ao carregar do Kodular:", e);
-      }finally{
-        isHydratingFromKodular = false;
-      }
-    };
-
-    /* ===== STORAGE LOCAL (browser) ===== */
-    function salvarDadosLocalOnly(){
-      try{
-        localStorage.setItem("estoque", JSON.stringify(estoque));
-        localStorage.setItem("historico", JSON.stringify(historico));
-        localStorage.setItem("lucroTotal", String(lucroTotal));
-      }catch(e){
-        console.log("Erro localStorage:", e);
-      }
+    function clone(obj){
+      return JSON.parse(JSON.stringify(obj));
     }
 
-    function salvarDados(){
-      salvarDadosLocalOnly();
-      // só envia se NÃO estiver hidratando do Kodular
-      if(!isHydratingFromKodular) enviarParaKodularB64();
+    function stripImages(state){
+      const s = clone(state);
+      s.estoque = (s.estoque || []).map(p => ({...p, imagem: null}));
+      s.historico = (s.historico || []).map(h => ({...h, imagem: null}));
+      return s;
     }
 
-    function carregarDados(){
-      estoque = JSON.parse(localStorage.getItem("estoque")) || [];
-      historico = JSON.parse(localStorage.getItem("historico")) || [];
-      lucroTotal = parseFloat(localStorage.getItem("lucroTotal")) || 0;
+    function applyState(state){
+      estoque = Array.isArray(state.estoque) ? state.estoque : [];
+      historico = Array.isArray(state.historico) ? state.historico : [];
+      lucroTotal = parseFloat(state.lucroTotal) || 0;
 
       atualizarDashboard();
       atualizarHistorico();
     }
 
-    /* ===== NAV ===== */
+    // ====== LOCAL STORAGE ======
+    function salvarLocal(state){
+      try{
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(state));
+        return true;
+      }catch(e){
+        return false;
+      }
+    }
+
+    function carregarLocal(){
+      try{
+        const raw = localStorage.getItem(LOCAL_KEY);
+        if(!raw) return null;
+        return JSON.parse(raw);
+      }catch(e){
+        return null;
+      }
+    }
+
+    // ====== KODULAR SYNC (AppInventor WebViewString) ======
+    function sendToKodularB64(state){
+      try{
+        const payload = JSON.stringify(state);
+        let b64 = toB64(payload);
+
+        // proteção de tamanho: remove imagens se ficar grande
+        if (b64.length > MAX_B64_LEN){
+          const stripped = stripImages(state);
+          const payload2 = JSON.stringify(stripped);
+          b64 = toB64(payload2);
+
+          // aplica localmente também (pra não ficar “salvando e sumindo”)
+          applyState(stripped);
+          salvarLocal(stripped);
+
+          // avisa 1x por sessão
+          if(!window.__warnedBig){
+            window.__warnedBig = true;
+            alert("Aviso: havia muitas fotos e os dados ficaram grandes. Para não perder seus itens, o app removeu as imagens e salvou apenas as informações.");
+          }
+        }
+
+        if (b64 === lastSent) return;
+        lastSent = b64;
+
+        if (window.AppInventor && window.AppInventor.setWebViewString){
+          window.AppInventor.setWebViewString(b64);
+        }
+      }catch(e){}
+    }
+
+    function queueSyncToKodular(){
+      if(isApplyingRemote) return;
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => {
+        const state = serializeState();
+
+        // tenta salvar local; se falhar, remove imagens e salva
+        const ok = salvarLocal(state);
+        if(!ok){
+          const stripped = stripImages(state);
+          applyState(stripped);
+          salvarLocal(stripped);
+          sendToKodularB64(stripped);
+          return;
+        }
+
+        sendToKodularB64(state);
+      }, SYNC_DEBOUNCE_MS);
+    }
+
+    // Chamado SEMPRE que mudar dados
+    function salvarDados(){
+      queueSyncToKodular();
+    }
+
+    // Recebe do Kodular (o Kodular chama isso no PageLoaded via EvaluateJS)
+    window.loadFromKodularB64 = function(b64){
+      try{
+        const payload = fromB64(b64);
+        const remote = JSON.parse(payload);
+
+        const local = carregarLocal();
+        const localUpdated = local && local.updatedAt ? local.updatedAt : 0;
+        const remoteUpdated = remote && remote.updatedAt ? remote.updatedAt : 0;
+
+        // aplica o mais recente
+        const winner = remoteUpdated >= localUpdated ? remote : local;
+
+        isApplyingRemote = true;
+        applyState(winner || {estoque:[], historico:[], lucroTotal:0});
+        salvarLocal(winner || {version:2, updatedAt:Date.now(), estoque:[], historico:[], lucroTotal:0});
+        setTimeout(() => { isApplyingRemote = false; }, 500);
+      }catch(e){}
+    };
+
+    // ====== NAV ======
     function mostrar(id){
       document.querySelectorAll(".screen").forEach(s => s.classList.add("hidden"));
       $(id).classList.remove("hidden");
       if(id === "venda") renderVenda();
     }
 
-    /* ===== CADASTRO ===== */
-    function carregarImagem(e){
-      const file = e.target.files && e.target.files[0];
-      if(!file) return;
+    // ====== IMAGEM (compressão) ======
+    async function compressImageToDataURL(file, maxSide = 240, quality = 0.6){
+      const url = URL.createObjectURL(file);
+      try{
+        const img = new Image();
+        img.decoding = "async";
+        img.src = url;
+        await new Promise((res, rej) => {
+          img.onload = () => res();
+          img.onerror = () => rej(new Error("Erro ao carregar imagem"));
+        });
 
-      const r = new FileReader();
-      r.onload = () => imagemTemp = r.result; // dataURL (pode ficar grande)
-      r.readAsDataURL(file);
+        let { width:w, height:h } = img;
+        const scale = Math.min(1, maxSide / Math.max(w, h));
+        w = Math.max(1, Math.round(w * scale));
+        h = Math.max(1, Math.round(h * scale));
+
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+
+        return canvas.toDataURL("image/jpeg", quality);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
     }
 
+    $("fotoProduto").addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if(!file){ imagemTemp = null; return; }
+      try{
+        imagemTemp = await compressImageToDataURL(file, 240, 0.6);
+      }catch(err){
+        imagemTemp = null;
+        alert("Não consegui processar a imagem. Tente outra foto.");
+      }
+    });
+
+    // ====== CADASTRO ======
     function cadastrar(){
       const nome = $("nomeProduto").value.trim();
       const compra = parseFloat($("valorCompra").value);
 
       if(!nome || !compra) return alert("Preencha tudo");
 
-      estoque.push({ nome, compra, imagem: imagemTemp });
+      estoque.push({
+        id: makeId(),
+        nome,
+        compra,
+        imagem: imagemTemp || null
+      });
 
       $("nomeProduto").value = "";
       $("valorCompra").value = "";
+      $("fotoProduto").value = "";
       imagemTemp = null;
 
       salvarDados();
@@ -454,7 +567,7 @@
       alert("Produto cadastrado!");
     }
 
-    /* ===== VENDA ===== */
+    // ====== VENDA ======
     function renderVenda(){
       const vendaEl = $("venda");
 
@@ -473,39 +586,44 @@
               <strong>${p.nome}</strong>
               <small>Custo: R$ ${p.compra.toFixed(2)}</small>
 
-              <input type="date" id="data-${i}">
-              <input type="number" inputmode="decimal" placeholder="Valor de venda" id="venda-${i}">
-              <textarea placeholder="Nota / Detalhes" id="nota-${i}"></textarea>
+              <input type="date" id="data-${p.id}">
+              <input type="number" inputmode="decimal" placeholder="Valor de venda" id="venda-${p.id}">
+              <textarea placeholder="Nota / Detalhes" id="nota-${p.id}"></textarea>
 
-              <button class="action" type="button" style="background:var(--success)" onclick="vender(${i})">Vender</button>
+              <button class="action" type="button" style="background:var(--success)" onclick="vender('${p.id}')">Vender</button>
             </div>
           </div>
         `;
       });
     }
 
-    function vender(i){
-      const v = parseFloat(document.getElementById(`venda-${i}`).value);
+    function vender(id){
+      const pIndex = estoque.findIndex(x => x.id === id);
+      if(pIndex === -1) return;
+
+      const v = parseFloat(document.getElementById(`venda-${id}`).value);
       if(!v) return alert("Informe o valor de venda");
 
-      const p = estoque[i];
-      const nota = document.getElementById(`nota-${i}`).value;
-      const dataInput = document.getElementById(`data-${i}`).value;
+      const p = estoque[pIndex];
+      const nota = document.getElementById(`nota-${id}`).value;
+      const dataInput = document.getElementById(`data-${id}`).value;
       const dataVenda = dataInput ? new Date(dataInput + "T12:00") : new Date();
 
       lucroTotal += (v - p.compra);
 
-      const ts = Date.now(); // id único
       historico.push({
-        ...p,
+        id: makeId(),
+        nome: p.nome,
+        compra: p.compra,
+        imagem: p.imagem || null,
         venda: v,
         nota,
         data: dataVenda.toLocaleDateString("pt-BR"),
         mes: dataVenda.getMonth(),
-        ts
+        ts: dataVenda.getTime()
       });
 
-      estoque.splice(i, 1);
+      estoque.splice(pIndex, 1);
       salvarDados();
       renderVenda();
       atualizarDashboard();
@@ -513,14 +631,14 @@
       alert("Venda registrada!");
     }
 
-    /* ===== DASHBOARD ===== */
+    // ====== DASHBOARD ======
     function atualizarDashboard(){
       $("qtd").textContent = estoque.length;
-      $("valorEstoque").textContent = estoque.reduce((s,p) => s + p.compra, 0).toFixed(2);
-      $("lucro").textContent = lucroTotal.toFixed(2);
+      $("valorEstoque").textContent = estoque.reduce((s,p) => s + (p.compra || 0), 0).toFixed(2);
+      $("lucro").textContent = (parseFloat(lucroTotal) || 0).toFixed(2);
     }
 
-    /* ===== HISTÓRICO ===== */
+    // ====== HISTÓRICO ======
     function atualizarHistorico(){
       const mes = $("filtroMes").value;
       const listaEl = $("historicoLista");
@@ -528,7 +646,7 @@
 
       const lista = historico
         .slice()
-        .sort((a,b) => b.ts - a.ts)
+        .sort((a,b) => (b.ts||0) - (a.ts||0))
         .filter(h => mes === "" || String(h.mes) === String(mes));
 
       if(lista.length === 0){
@@ -537,22 +655,22 @@
       }
 
       lista.forEach(h => {
-        const key = h.ts;
+        const key = h.id;
         listaEl.innerHTML += `
           <div class="historico-item">
             <div class="historico-header">
               <img src="${h.imagem || ''}" alt="">
-              <strong onclick="toggleDetalhes(${key})">${h.nome}</strong>
-              <div class="data-chip" onclick="toggleDetalhes(${key})">${h.data}</div>
-              <div class="seta" id="seta-${key}" onclick="toggleDetalhes(${key})">▶</div>
+              <strong onclick="toggleDetalhes('${key}')">${h.nome}</strong>
+              <div class="data-chip" onclick="toggleDetalhes('${key}')">${h.data}</div>
+              <div class="seta" id="seta-${key}" onclick="toggleDetalhes('${key}')">▶</div>
             </div>
 
             <div class="historico-detalhes" id="detalhes-${key}">
-              <p><b>Compra:</b> R$ ${h.compra.toFixed(2)}</p>
-              <p><b>Venda:</b> R$ ${h.venda.toFixed(2)}</p>
-              <p><b>Lucro:</b> R$ ${(h.venda - h.compra).toFixed(2)}</p>
+              <p><b>Compra:</b> R$ ${(h.compra || 0).toFixed(2)}</p>
+              <p><b>Venda:</b> R$ ${(h.venda || 0).toFixed(2)}</p>
+              <p><b>Lucro:</b> R$ ${((h.venda || 0) - (h.compra || 0)).toFixed(2)}</p>
               <p><b>Nota:</b> ${h.nota || '-'}</p>
-              <button class="action" type="button" style="background:var(--danger)" onclick="excluirVenda(${key})">Excluir</button>
+              <button class="action" type="button" style="background:var(--danger)" onclick="excluirVenda('${key}')">Excluir</button>
             </div>
           </div>
         `;
@@ -570,11 +688,11 @@
     function excluirVenda(key){
       if(!confirm("Excluir esta venda?")) return;
 
-      const idx = historico.findIndex(h => h.ts === key);
+      const idx = historico.findIndex(h => h.id === key);
       if(idx === -1) return;
 
       const h = historico[idx];
-      lucroTotal -= (h.venda - h.compra);
+      lucroTotal -= ((h.venda || 0) - (h.compra || 0));
 
       historico.splice(idx, 1);
       salvarDados();
@@ -582,9 +700,16 @@
       atualizarHistorico();
     }
 
-    /* INIT */
-    carregarDados();
-    mostrar("dashboard");
+    // ====== INIT ======
+    (function init(){
+      const local = carregarLocal();
+      if(local){
+        applyState(local);
+      }else{
+        applyState({estoque:[], historico:[], lucroTotal:0});
+      }
+      mostrar("dashboard");
+    })();
   </script>
 </body>
 </html>
