@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Controle de Vendas</title>
 
 <style>
@@ -17,12 +18,15 @@
 }
 
 *{box-sizing:border-box}
+html,body{height:100%}
 
 body{
   margin:0;
   font-family:Segoe UI,Arial,sans-serif;
   background:var(--bg);
   color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
 }
 
 header{
@@ -34,6 +38,7 @@ header{
   color:#fff;
 }
 
+/* NAV */
 nav{
   display:flex;
   gap:10px;
@@ -45,11 +50,19 @@ nav{
 nav button{
   flex:1;
   padding:12px;
-  border-radius:20px;
+  border-radius:999px;
   border:none;
   background:var(--primary);
   color:#fff;
   font-weight:600;
+  min-height:44px;
+  transition:transform .06s ease, filter .2s ease, box-shadow .2s ease;
+}
+
+nav button:active{ transform:scale(.98); }
+nav button.active{
+  filter:brightness(.92);
+  box-shadow:0 10px 22px rgba(37,99,235,.22);
 }
 
 .container{
@@ -68,12 +81,14 @@ nav button{
 
 .hidden{display:none}
 
+/* inputs confortáveis no mobile */
 input,select,textarea{
   width:100%;
   padding:12px;
   border-radius:14px;
   border:1px solid var(--border);
   margin-bottom:10px;
+  font-size:16px; /* evita zoom no iOS e melhora toque */
 }
 
 textarea{resize:vertical}
@@ -86,6 +101,7 @@ button.action{
   color:#fff;
   border:none;
   font-weight:bold;
+  min-height:44px;
 }
 
 /* DASHBOARD */
@@ -104,7 +120,7 @@ button.action{
 
 .stat span{
   display:block;
-  font-size:26px;
+  font-size:28px;
   font-weight:bold;
   margin-top:8px;
 }
@@ -142,9 +158,9 @@ button.action{
 
 .historico-header{
   display:grid;
-  grid-template-columns:70px 1fr 70px 24px;
+  grid-template-columns:70px 1fr 80px 24px;
   align-items:center;
-  gap:6px;
+  gap:8px;
 }
 
 .historico-header img{
@@ -166,6 +182,51 @@ button.action{
   border-top:1px dashed var(--border);
   display:none;
 }
+
+/* ==========================
+   MOBILE: ficar “de celular”
+   ========================== */
+@media (max-width: 520px){
+  header{ padding:16px; font-size:20px; }
+
+  nav{
+    padding:12px;
+    gap:12px;
+    flex-wrap:wrap; /* vira 2 linhas */
+  }
+
+  nav button{
+    flex:1 1 calc(50% - 12px); /* 2 colunas */
+    padding:14px;
+    font-size:14px;
+  }
+
+  .container{ padding:12px; }
+  .card{ padding:16px; border-radius:18px; }
+
+  /* dashboard em 1 coluna no celular */
+  .dashboard{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  .stat{ padding:16px; }
+  .stat span{ font-size:32px; }
+
+  .historico-header{
+    grid-template-columns:70px 1fr 60px 24px;
+  }
+}
+
+/* muito pequeno: produto vira “empilhado” pra caber inputs */
+@media (max-width: 420px){
+  .produto{
+    grid-template-columns:1fr;
+  }
+  .produto img{
+    width:100%;
+    height:180px;
+  }
+}
 </style>
 </head>
 
@@ -174,10 +235,10 @@ button.action{
 <header>💰 Controle de Vendas</header>
 
 <nav>
-  <button onclick="mostrar('dashboard')">Dashboard</button>
-  <button onclick="mostrar('cadastro')">Cadastrar</button>
-  <button onclick="mostrar('venda')">Vender</button>
-  <button onclick="mostrar('historico')">Histórico</button>
+  <button class="nav-btn active" onclick="mostrar('dashboard', this)">Dashboard</button>
+  <button class="nav-btn" onclick="mostrar('cadastro', this)">Cadastrar</button>
+  <button class="nav-btn" onclick="mostrar('venda', this)">Vender</button>
+  <button class="nav-btn" onclick="mostrar('historico', this)">Histórico</button>
 </nav>
 
 <div class="container">
@@ -199,8 +260,8 @@ button.action{
   <button class="action" onclick="cadastrar()">Cadastrar Produto</button>
 </div>
 
-<!-- VENDA -->
-<div id="venda" class="hidden"></div>
+<!-- VENDA (agora é card, pra preencher bonito) -->
+<div id="venda" class="card hidden"></div>
 
 <!-- HISTÓRICO -->
 <div id="historico" class="card hidden">
@@ -232,120 +293,30 @@ let historico=[];
 let lucroTotal=0;
 let imagemTemp=null;
 
-/* ======================================================
-   SALVAMENTO (LocalStorage + ponte pro TinyDB via Kodular)
-   ====================================================== */
-const STORAGE_KEYS = {
-  estoque: "estoque",
-  historico: "historico",
-  lucro: "lucroTotal"
-};
-
-let __lastB64Sent = "";
-let __applyingExternal = false;
-let __receivedFromKodular = false;
-
-// Base64 seguro pra JSON (funciona bem em WebView)
-function b64EncodeUnicode(str){
-  try{
-    return btoa(unescape(encodeURIComponent(str)));
-  }catch(e){
-    return btoa(str);
-  }
-}
-function b64DecodeUnicode(b64){
-  try{
-    return decodeURIComponent(escape(atob(b64)));
-  }catch(e){
-    return atob(b64);
-  }
-}
-
-function snapshot(){
-  return { estoque, historico, lucroTotal };
-}
-
-function applySnapshot(s){
-  estoque = Array.isArray(s?.estoque) ? s.estoque : [];
-  historico = Array.isArray(s?.historico) ? s.historico : [];
-  lucroTotal = Number(s?.lucroTotal) || 0;
-}
-
-function salvarLocal(){
-  localStorage.setItem(STORAGE_KEYS.estoque, JSON.stringify(estoque));
-  localStorage.setItem(STORAGE_KEYS.historico, JSON.stringify(historico));
-  localStorage.setItem(STORAGE_KEYS.lucro, String(lucroTotal));
-}
-
-function carregarLocal(){
-  estoque = JSON.parse(localStorage.getItem(STORAGE_KEYS.estoque)) || [];
-  historico = JSON.parse(localStorage.getItem(STORAGE_KEYS.historico)) || [];
-  lucroTotal = parseFloat(localStorage.getItem(STORAGE_KEYS.lucro)) || 0;
-}
-
-function syncToKodular(){
-  if(__applyingExternal) return;
-
-  const b64 = b64EncodeUnicode(JSON.stringify(snapshot()));
-  if(b64 === __lastB64Sent) return;
-  __lastB64Sent = b64;
-
-  // Kodular/AppInventor bridge
-  if(window.AppInventor && typeof window.AppInventor.setWebViewString === "function"){
-    window.AppInventor.setWebViewString(b64);
-  }
-}
-
+/* ===== STORAGE ===== */
 function salvarDados(){
-  salvarLocal();
-  syncToKodular();
+  localStorage.setItem("estoque",JSON.stringify(estoque));
+  localStorage.setItem("historico",JSON.stringify(historico));
+  localStorage.setItem("lucroTotal",lucroTotal);
 }
 
 function carregarDados(){
-  carregarLocal();
+  estoque=JSON.parse(localStorage.getItem("estoque"))||[];
+  historico=JSON.parse(localStorage.getItem("historico"))||[];
+  lucroTotal=parseFloat(localStorage.getItem("lucroTotal"))||0;
   atualizarDashboard();
   atualizarHistorico();
-
-  // IMPORTANTe: não mandar imediatamente um “vazio” pro TinyDB.
-  // dá tempo do Kodular restaurar primeiro (PageLoaded -> EvaluateJS)
-  setTimeout(()=>{
-    if(!__receivedFromKodular){
-      syncToKodular();
-    }
-  }, 1200);
 }
 
-/* Função que o Kodular vai chamar via EvaluateJS */
-window.loadFromKodularB64 = function(b64){
-  if(!b64 || typeof b64 !== "string") return false;
-
-  try{
-    __receivedFromKodular = true;
-    __applyingExternal = true;
-
-    const json = b64DecodeUnicode(b64);
-    const data = JSON.parse(json);
-
-    applySnapshot(data);
-    salvarLocal(); // mantém localStorage alinhado
-    atualizarDashboard();
-    atualizarHistorico();
-
-    // evita eco
-    __lastB64Sent = b64;
-
-    return true;
-  }catch(e){
-    return false;
-  }finally{
-    __applyingExternal = false;
-  }
-};
-
-/* ===== NAV ===== */
-function mostrar(id){
-  document.querySelectorAll('.card,#venda').forEach(e=>e.classList.add('hidden'));
+/* ===== NAV + botão ativo ===== */
+function mostrar(id, btn){
+  document.querySelectorAll('.card').forEach(e=>e.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
+
+  // ativo
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+
   if(id==="venda") renderVenda();
 }
 
@@ -369,6 +340,11 @@ function cadastrar(){
 /* ===== VENDA ===== */
 function renderVenda(){
   venda.innerHTML="";
+  if(estoque.length === 0){
+    venda.innerHTML = "<div style='opacity:.7'>Nenhum produto em estoque para vender.</div>";
+    return;
+  }
+
   estoque.forEach((p,i)=>{
     venda.innerHTML+=`
     <div class="produto">
@@ -419,33 +395,40 @@ function atualizarDashboard(){
   lucro.textContent=lucroTotal.toFixed(2);
 }
 
-/* ===== HISTÓRICO (ORDENADO POR DATA) ===== */
+/* ===== HISTÓRICO ===== */
 function atualizarHistorico(){
   const mes=filtroMes.value;
   historicoLista.innerHTML="";
 
-  historico
+  const lista = historico
+    .slice()
     .sort((a,b)=>b.ts-a.ts)
-    .filter(h=>mes===""||h.mes==mes)
-    .forEach((h,i)=>{
-      historicoLista.innerHTML+=`
-      <div class="historico-item">
-        <div class="historico-header">
-          <img src="${h.imagem||''}">
-          <strong onclick="toggleDetalhes(${i})">${h.nome}</strong>
-          <div onclick="toggleDetalhes(${i})">${h.data}</div>
-          <div class="seta" id="seta-${i}" onclick="toggleDetalhes(${i})">▶</div>
-        </div>
+    .filter(h=>mes===""||h.mes==mes);
 
-        <div class="historico-detalhes" id="detalhes-${i}">
-          <p>Compra: R$ ${h.compra.toFixed(2)}</p>
-          <p>Venda: R$ ${h.venda.toFixed(2)}</p>
-          <p>Lucro: R$ ${(h.venda-h.compra).toFixed(2)}</p>
-          <p>Nota: ${h.nota||'-'}</p>
-          <button class="action" style="background:var(--danger)" onclick="excluirVenda(${i})">Excluir</button>
-        </div>
-      </div>`;
-    });
+  if(lista.length === 0){
+    historicoLista.innerHTML = "<div style='opacity:.7'>Nenhuma venda registrada.</div>";
+    return;
+  }
+
+  lista.forEach((h,i)=>{
+    historicoLista.innerHTML+=`
+    <div class="historico-item">
+      <div class="historico-header">
+        <img src="${h.imagem||''}">
+        <strong onclick="toggleDetalhes(${i})">${h.nome}</strong>
+        <div onclick="toggleDetalhes(${i})">${h.data}</div>
+        <div class="seta" id="seta-${i}" onclick="toggleDetalhes(${i})">▶</div>
+      </div>
+
+      <div class="historico-detalhes" id="detalhes-${i}">
+        <p>Compra: R$ ${h.compra.toFixed(2)}</p>
+        <p>Venda: R$ ${h.venda.toFixed(2)}</p>
+        <p>Lucro: R$ ${(h.venda-h.compra).toFixed(2)}</p>
+        <p>Nota: ${h.nota||'-'}</p>
+        <button class="action" style="background:var(--danger)" onclick="excluirVenda(${i})">Excluir</button>
+      </div>
+    </div>`;
+  });
 }
 
 function toggleDetalhes(i){
@@ -458,9 +441,15 @@ function toggleDetalhes(i){
 
 function excluirVenda(i){
   if(!confirm("Excluir esta venda?")) return;
-  const h=historico[i];
-  lucroTotal-=(h.venda-h.compra);
-  historico.splice(i,1);
+  const lista = historico.slice().sort((a,b)=>b.ts-a.ts);
+  const item = lista[i];
+  // remove o item real do historico original
+  const idxReal = historico.findIndex(h => h.ts === item.ts && h.nome === item.nome && h.venda === item.venda);
+  if(idxReal >= 0){
+    const h=historico[idxReal];
+    lucroTotal-=(h.venda-h.compra);
+    historico.splice(idxReal,1);
+  }
   salvarDados();
   atualizarDashboard();
   atualizarHistorico();
