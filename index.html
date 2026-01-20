@@ -1,276 +1,1099 @@
-<script>
-  const $ = (id) => document.getElementById(id);
-
-  let estoque = [];
-  let historico = [];
-  let lucroTotal = 0;
-  let imagemTemp = null;
-
-  // evita loop quando estiver restaurando do Kodular
-  let __restoringFromKodular = false;
-
-  // ===== Base64 seguro (Unicode) =====
-  function b64EncodeUnicode(str){
-    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
-      (_, p1) => String.fromCharCode(parseInt(p1, 16))
-    ));
-  }
-  function b64DecodeUnicode(b64){
-    return decodeURIComponent(Array.prototype.map.call(atob(b64), c =>
-      '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-    ).join(''));
-  }
-
-  // ===== Estado completo =====
-  function getStateObj(){
-    return { estoque, historico, lucroTotal };
-  }
-  function setStateObj(state){
-    estoque = Array.isArray(state.estoque) ? state.estoque : [];
-    historico = Array.isArray(state.historico) ? state.historico : [];
-    lucroTotal = Number(state.lucroTotal) || 0;
-  }
-
-  function enviarParaKodular(){
-    if(__restoringFromKodular) return;
-    try{
-      const json = JSON.stringify(getStateObj());
-      const b64  = b64EncodeUnicode(json);
-
-      // Só existe dentro do WebViewer (Kodular/App Inventor)
-      if(window.AppInventor && window.AppInventor.setWebViewString){
-        window.AppInventor.setWebViewString(b64);
-      }
-    }catch(e){}
-  }
-
-  // ===== STORAGE local + envia para Kodular =====
-  function salvarDados(){
-    localStorage.setItem("estoque", JSON.stringify(estoque));
-    localStorage.setItem("historico", JSON.stringify(historico));
-    localStorage.setItem("lucroTotal", String(lucroTotal));
-    enviarParaKodular();
-  }
-
-  function carregarDados(){
-    estoque = JSON.parse(localStorage.getItem("estoque")) || [];
-    historico = JSON.parse(localStorage.getItem("historico")) || [];
-    lucroTotal = parseFloat(localStorage.getItem("lucroTotal")) || 0;
-    atualizarDashboard();
-    atualizarHistorico();
-  }
-
-  // ===== FUNÇÃO QUE O KODULAR CHAMA =====
-  // (via EvaluateJS)
-  window.loadFromKodularB64 = function(b64){
-    if(!b64) return;
-    try{
-      __restoringFromKodular = true;
-
-      const json = b64DecodeUnicode(b64);
-      const state = JSON.parse(json);
-
-      setStateObj(state);
-
-      // salva no localStorage mas NÃO reenvia pro Kodular (evita loop)
-      localStorage.setItem("estoque", JSON.stringify(estoque));
-      localStorage.setItem("historico", JSON.stringify(historico));
-      localStorage.setItem("lucroTotal", String(lucroTotal));
-
-      atualizarDashboard();
-      atualizarHistorico();
-    }catch(e){
-      console.log("Erro ao restaurar do Kodular:", e);
-    }finally{
-      __restoringFromKodular = false;
-    }
-  };
-
-  // ===== NAV =====
-  function mostrar(id){
-    document.querySelectorAll(".screen").forEach(s => s.classList.add("hidden"));
-    $(id).classList.remove("hidden");
-    if(id === "venda") renderVenda();
-  }
-
-  // ===== IMAGEM (REDUZ PARA NÃO EXPLODIR O TAMANHO) =====
-  function carregarImagem(e){
-    const file = e.target.files && e.target.files[0];
-    if(!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const max = 480; // reduz bastante
-        let w = img.width, h = img.height;
-        if(w > h && w > max){ h = Math.round(h * (max / w)); w = max; }
-        else if(h > max){ w = Math.round(w * (max / h)); h = max; }
-
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, w, h);
-
-        imagemTemp = canvas.toDataURL("image/jpeg", 0.75); // bem menor que PNG
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  // ===== CADASTRO =====
-  function cadastrar(){
-    const nome = $("nomeProduto").value.trim();
-    const compra = parseFloat($("valorCompra").value);
-
-    if(!nome || !compra) return alert("Preencha tudo");
-
-    estoque.push({ nome, compra, imagem: imagemTemp });
-
-    $("nomeProduto").value = "";
-    $("valorCompra").value = "";
-    imagemTemp = null;
-
-    salvarDados();
-    atualizarDashboard();
-    alert("Produto cadastrado!");
-  }
-
-  // ===== VENDA =====
-  function renderVenda(){
-    const vendaEl = $("venda");
-
-    if(estoque.length === 0){
-      vendaEl.innerHTML = `<div class="vazio">Nenhum produto no estoque para vender.</div>`;
-      return;
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <title>Controle de Vendas</title>
+  <style>
+    :root{
+      --bg: #0b1220;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.10);
+      --stroke: rgba(255,255,255,.14);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --danger: #ef4444;
+      --ok: #22c55e;
+      --accent: #60a5fa;
+      --shadow: 0 14px 40px rgba(0,0,0,.35);
+      --r: 18px;
     }
 
-    vendaEl.innerHTML = "";
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height:100%; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1400px 900px at 30% 10%, #162a56 0%, #0b1220 45%, #070b14 100%);
+      color: var(--text);
+      overflow-x:hidden;
+    }
 
-    estoque.forEach((p,i) => {
-      vendaEl.innerHTML += `
-        <div class="produto">
-          <img src="${p.imagem || ''}" alt="">
+    /* melhora “encaixe” no mobile */
+    .safe{
+      padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding-top: 8px;
+      margin-bottom: 10px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      user-select:none;
+    }
+    .logo{
+      width: 40px; height: 40px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(96,165,250,.95), rgba(34,197,94,.75));
+      box-shadow: var(--shadow);
+    }
+    h1{
+      margin:0;
+      font-size: clamp(18px, 4.5vw, 22px);
+      letter-spacing: .2px;
+      line-height: 1.1;
+    }
+    .sub{
+      margin:0;
+      color: var(--muted);
+      font-size: 12.5px;
+      margin-top: 2px;
+    }
+
+    .pill{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding: 10px 12px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.04);
+      border-radius: 999px;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .dot{
+      width:8px; height:8px; border-radius:999px;
+      background: var(--ok);
+      box-shadow: 0 0 0 3px rgba(34,197,94,.15);
+    }
+    .dot.off{ background: var(--danger); box-shadow: 0 0 0 3px rgba(239,68,68,.15); }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      margin: 12px 0 14px;
+      flex-wrap: wrap;
+    }
+    .tab{
+      flex: 1 1 auto;
+      min-width: 110px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      padding: 10px 12px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-weight: 600;
+      font-size: 13.5px;
+      transition: .15s ease;
+    }
+    .tab.active{
+      background: rgba(96,165,250,.16);
+      border-color: rgba(96,165,250,.35);
+      color: var(--text);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 760px){
+      .grid{ grid-template-columns: 1.15fr .85fr; }
+    }
+
+    .card{
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card-h{
+      padding: 14px 14px 12px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.00));
+    }
+    .card-h h2{
+      margin:0;
+      font-size: 15.5px;
+      letter-spacing: .2px;
+    }
+    .card-h p{
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+    .card-b{ padding: 12px 14px 14px; }
+
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .btn{
+      appearance:none;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight: 700;
+      font-size: 13.5px;
+      transition: .15s ease;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.08); }
+    .btn.primary{
+      background: rgba(96,165,250,.18);
+      border-color: rgba(96,165,250,.35);
+    }
+    .btn.danger{
+      background: rgba(239,68,68,.14);
+      border-color: rgba(239,68,68,.28);
+    }
+
+    .input, select, textarea{
+      width:100%;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--stroke);
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      outline:none;
+      font-size: 14px;
+    }
+    textarea{ min-height: 86px; resize: vertical; }
+
+    label{
+      display:block;
+      font-size: 12.5px;
+      color: var(--muted);
+      margin: 10px 0 6px;
+      font-weight: 600;
+    }
+
+    .kpis{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .kpi{
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+    }
+    .kpi .t{ font-size: 12.5px; color: var(--muted); font-weight: 700; }
+    .kpi .v{ margin-top: 6px; font-size: 18px; font-weight: 900; letter-spacing:.2px; }
+
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top: 10px;
+    }
+    .item{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      border-radius: 14px;
+      padding: 12px;
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      align-items:flex-start;
+    }
+    .item .left{ min-width: 0; }
+    .item .name{
+      font-weight: 900;
+      font-size: 14.5px;
+      line-height:1.2;
+      word-break: break-word;
+    }
+    .item .meta{
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12.5px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .badge{
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.04);
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .right{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .muted{
+      color: var(--muted);
+      font-size: 12.5px;
+      margin-top: 8px;
+    }
+
+    /* Modal */
+    .modal{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items: flex-end;
+      justify-content:center;
+      padding: 16px;
+      z-index: 999;
+    }
+    .modal.open{ display:flex; }
+    .sheet{
+      width: min(720px, 100%);
+      border-radius: 22px;
+      background: rgba(15, 23, 42, .95);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      max-height: 92vh;
+      display:flex;
+      flex-direction:column;
+    }
+    .sheet-h{
+      padding: 14px 14px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03);
+    }
+    .sheet-h h3{ margin:0; font-size: 15.5px; }
+    .sheet-b{
+      padding: 12px 14px 14px;
+      overflow:auto;
+    }
+
+    .sep{ height: 1px; background: rgba(255,255,255,.08); margin: 10px 0; }
+
+    .empty{
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px dashed rgba(255,255,255,.18);
+      color: rgba(255,255,255,.75);
+      background: rgba(255,255,255,.03);
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="safe">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Controle de Vendas</h1>
+          <p class="sub">Produtos usados • Estoque • Lucro • Histórico</p>
+        </div>
+      </div>
+
+      <div class="pill" id="statusPill" title="Status de sincronização">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">Pronto</span>
+      </div>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="estoque">Estoque</button>
+      <button class="tab" data-tab="vender">Vender</button>
+      <button class="tab" data-tab="historico">Histórico</button>
+    </div>
+
+    <div class="grid">
+      <!-- Coluna principal -->
+      <section class="card" id="mainCard">
+        <div class="card-h">
           <div>
-            <strong>${p.nome}</strong>
-            <small>Custo: R$ ${p.compra.toFixed(2)}</small>
-
-            <input type="date" id="data-${i}">
-            <input type="number" inputmode="decimal" placeholder="Valor de venda" id="venda-${i}">
-            <textarea placeholder="Nota / Detalhes" id="nota-${i}"></textarea>
-
-            <button class="action" type="button"
-              style="background:var(--success)"
-              onclick="vender(${i})">Vender</button>
+            <h2 id="mainTitle">Estoque</h2>
+            <p id="mainDesc">Cadastre seus produtos e acompanhe o estoque.</p>
+          </div>
+          <div class="row">
+            <button class="btn primary" id="btnAdd">+ Cadastrar</button>
+            <button class="btn" id="btnBackup">Backup</button>
+            <button class="btn danger" id="btnReset">Limpar</button>
           </div>
         </div>
-      `;
-    });
-  }
+        <div class="card-b" id="mainBody">
+          <!-- conteúdo dinâmico -->
+        </div>
+      </section>
 
-  function vender(i){
-    const v = parseFloat(document.getElementById(`venda-${i}`).value);
-    if(!v) return alert("Informe o valor de venda");
+      <!-- Coluna lateral -->
+      <aside class="card">
+        <div class="card-h">
+          <div>
+            <h2>Dashboard</h2>
+            <p>Resumo geral do seu controle.</p>
+          </div>
+        </div>
+        <div class="card-b">
+          <div class="kpis">
+            <div class="kpi">
+              <div class="t">Itens em estoque</div>
+              <div class="v" id="kpiStock">0</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Lucro (total)</div>
+              <div class="v" id="kpiProfit">R$ 0,00</div>
+            </div>
+          </div>
 
-    const p = estoque[i];
-    const nota = document.getElementById(`nota-${i}`).value;
-    const dataInput = document.getElementById(`data-${i}`).value;
-    const dataVenda = dataInput ? new Date(dataInput + "T12:00") : new Date();
+          <div class="sep"></div>
 
-    lucroTotal += (v - p.compra);
+          <div class="kpi">
+            <div class="t">Vendas (quantidade)</div>
+            <div class="v" id="kpiSalesCount">0</div>
+          </div>
 
-    const ts = dataVenda.getTime();
-    historico.push({
-      ...p,
-      venda: v,
-      nota,
-      data: dataVenda.toLocaleDateString("pt-BR"),
-      mes: dataVenda.getMonth(),
-      ts
-    });
+          <p class="muted">
+            * O app salva automaticamente.<br/>
+            No Kodular, a sincronização é feita via TinyDB (WebViewString).
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
 
-    estoque.splice(i, 1);
-    salvarDados();
-    renderVenda();
-    atualizarDashboard();
-    atualizarHistorico();
-    alert("Venda registrada!");
-  }
+  <!-- Modal: cadastrar produto -->
+  <div class="modal" id="modalProduct">
+    <div class="sheet">
+      <div class="sheet-h">
+        <h3>Cadastrar produto</h3>
+        <button class="btn" id="closeProduct">Fechar</button>
+      </div>
+      <div class="sheet-b">
+        <label>Nome do produto</label>
+        <input class="input" id="pName" placeholder="Ex.: iPhone 11 (usado)" />
 
-  // ===== DASHBOARD =====
-  function atualizarDashboard(){
-    $("qtd").textContent = estoque.length;
-    $("valorEstoque").textContent = estoque.reduce((s,p) => s + p.compra, 0).toFixed(2);
-    $("lucro").textContent = lucroTotal.toFixed(2);
-  }
+        <div class="row" style="gap:12px;">
+          <div style="flex:1 1 180px;">
+            <label>Preço de custo (R$)</label>
+            <input class="input" id="pCost" inputmode="decimal" placeholder="Ex.: 1200" />
+          </div>
+          <div style="flex:1 1 180px;">
+            <label>Preço de venda sugerido (R$)</label>
+            <input class="input" id="pPrice" inputmode="decimal" placeholder="Ex.: 1800" />
+          </div>
+          <div style="flex:1 1 120px;">
+            <label>Quantidade</label>
+            <input class="input" id="pQty" inputmode="numeric" placeholder="Ex.: 1" />
+          </div>
+        </div>
 
-  // ===== HISTÓRICO =====
-  function atualizarHistorico(){
-    const mes = $("filtroMes").value;
-    const listaEl = $("historicoLista");
-    listaEl.innerHTML = "";
+        <label>Observações</label>
+        <textarea class="input" id="pNotes" placeholder="Detalhes (estado, acessórios, etc.)"></textarea>
 
-    const lista = historico
-      .slice()
-      .sort((a,b) => b.ts - a.ts)
-      .filter(h => mes === "" || String(h.mes) === String(mes));
+        <div class="row" style="margin-top:12px; justify-content:flex-end;">
+          <button class="btn primary" id="saveProduct">Salvar produto</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    if(lista.length === 0){
-      listaEl.innerHTML = `<div class="vazio">Nenhuma venda registrada.</div>`;
-      return;
+  <!-- Modal: vender -->
+  <div class="modal" id="modalSell">
+    <div class="sheet">
+      <div class="sheet-h">
+        <h3>Registrar venda</h3>
+        <button class="btn" id="closeSell">Fechar</button>
+      </div>
+      <div class="sheet-b">
+        <label>Produto</label>
+        <select class="input" id="sProduct"></select>
+
+        <div class="row" style="gap:12px;">
+          <div style="flex:1 1 120px;">
+            <label>Quantidade</label>
+            <input class="input" id="sQty" inputmode="numeric" placeholder="Ex.: 1" />
+          </div>
+          <div style="flex:1 1 180px;">
+            <label>Preço de venda (R$)</label>
+            <input class="input" id="sPrice" inputmode="decimal" placeholder="Ex.: 1800" />
+          </div>
+        </div>
+
+        <label>Comprador / Observações</label>
+        <textarea class="input" id="sNotes" placeholder="Nome, detalhes da venda, etc."></textarea>
+
+        <div class="row" style="margin-top:12px; justify-content:flex-end;">
+          <button class="btn primary" id="confirmSell">Confirmar venda</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Backup -->
+  <div class="modal" id="modalBackup">
+    <div class="sheet">
+      <div class="sheet-h">
+        <h3>Backup</h3>
+        <button class="btn" id="closeBackup">Fechar</button>
+      </div>
+      <div class="sheet-b">
+        <div class="empty">
+          Copie esse texto e guarde. Se precisar restaurar, cole no campo abaixo e clique em “Restaurar”.
+        </div>
+
+        <label style="margin-top:12px;">Backup (Base64)</label>
+        <textarea class="input" id="backupText"></textarea>
+
+        <div class="row" style="margin-top:12px; justify-content:flex-end;">
+          <button class="btn" id="copyBackup">Copiar</button>
+          <button class="btn primary" id="restoreBackup">Restaurar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /******************************************************************
+     * BASE64 (unicode safe)
+     ******************************************************************/
+    function b64EncodeUnicode(str) {
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+    function b64DecodeUnicode(b64) {
+      return decodeURIComponent(escape(atob(b64)));
     }
 
-    lista.forEach(h => {
-      const key = h.ts;
-      listaEl.innerHTML += `
-        <div class="historico-item">
-          <div class="historico-header">
-            <img src="${h.imagem || ''}" alt="">
-            <strong onclick="toggleDetalhes(${key})">${h.nome}</strong>
-            <div class="data-chip" onclick="toggleDetalhes(${key})">${h.data}</div>
-            <div class="seta" id="seta-${key}" onclick="toggleDetalhes(${key})">▶</div>
-          </div>
+    /******************************************************************
+     * ESTADO + PERSISTÊNCIA (LocalStorage + Kodular WebViewString)
+     ******************************************************************/
+    const STORAGE_KEY = "cvusados_state_v3";
+    let state = {
+      products: [], // {id, name, cost, price, qty, notes, createdAt}
+      sales: []     // {id, productId, productName, qty, price, cost, profit, notes, createdAt}
+    };
 
-          <div class="historico-detalhes" id="detalhes-${key}">
-            <p><b>Compra:</b> R$ ${h.compra.toFixed(2)}</p>
-            <p><b>Venda:</b> R$ ${h.venda.toFixed(2)}</p>
-            <p><b>Lucro:</b> R$ ${(h.venda - h.compra).toFixed(2)}</p>
-            <p><b>Nota:</b> ${h.nota || '-'}</p>
-            <button class="action" type="button"
-              style="background:var(--danger)"
-              onclick="excluirVenda(${key})">Excluir</button>
+    let isApplyingExternalState = false;
+    let lastSentB64 = "";
+    let saveTimer = null;
+
+    function nowISO(){ return new Date().toISOString(); }
+    function uid(){
+      return Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+    }
+
+    function toNumberBR(v){
+      if (v == null) return 0;
+      const s = String(v).trim().replace(/\./g, "").replace(",", ".");
+      const n = Number(s);
+      return isFinite(n) ? n : 0;
+    }
+    function moneyBR(v){
+      const n = Number(v || 0);
+      return n.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+    }
+
+    function exportState(){
+      return {
+        version: 3,
+        updatedAt: nowISO(),
+        products: state.products,
+        sales: state.sales
+      };
+    }
+
+    function importState(obj){
+      if (!obj || typeof obj !== "object") return false;
+      state.products = Array.isArray(obj.products) ? obj.products : [];
+      state.sales = Array.isArray(obj.sales) ? obj.sales : [];
+      return true;
+    }
+
+    function encodeStateToB64(){
+      const json = JSON.stringify(exportState());
+      return b64EncodeUnicode(json);
+    }
+
+    function decodeB64ToObj(b64){
+      const json = b64DecodeUnicode(b64);
+      return JSON.parse(json);
+    }
+
+    function setStatus(text, ok=true){
+      const dot = document.getElementById("statusDot");
+      const t = document.getElementById("statusText");
+      t.textContent = text;
+      dot.classList.toggle("off", !ok);
+    }
+
+    function saveLocal(){
+      try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(exportState()));
+      }catch(e){}
+    }
+
+    function loadLocal(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return false;
+        const obj = JSON.parse(raw);
+        return importState(obj);
+      }catch(e){
+        return false;
+      }
+    }
+
+    // Envia pro Kodular via WebViewString (se existir AppInventor)
+    function sendToKodular(b64){
+      try{
+        if (window.AppInventor && typeof window.AppInventor.setWebViewString === "function") {
+          window.AppInventor.setWebViewString(b64);
+          return true;
+        }
+      }catch(e){}
+      return false;
+    }
+
+    // Debounce de salvamento (evita “às vezes salva / às vezes não”)
+    function requestSave(reason=""){
+      if (isApplyingExternalState) return;
+
+      // Salva local sempre
+      saveLocal();
+
+      // Debounce para enviar ao Kodular
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        try{
+          const b64 = encodeStateToB64();
+
+          // evita spam / loops
+          if (b64 === lastSentB64) {
+            setStatus("Pronto", true);
+            return;
+          }
+
+          lastSentB64 = b64;
+          setStatus("Salvando…", true);
+
+          // tenta enviar ao Kodular
+          const sent = sendToKodular(b64);
+          setTimeout(() => {
+            setStatus(sent ? "Salvo" : "Salvo (local)", true);
+          }, 120);
+
+        }catch(e){
+          setStatus("Erro ao salvar", false);
+        }
+      }, 450);
+    }
+
+    /******************************************************************
+     * HANDSHAKE PARA O KODULAR INJETAR O B64 (TinyDB -> Evaluate JS)
+     * Kodular vai chamar: window.loadFromKodularB64("...b64...")
+     ******************************************************************/
+    window.loadFromKodularB64 = function(b64){
+      try{
+        if (!b64 || typeof b64 !== "string") return false;
+
+        isApplyingExternalState = true;
+        const obj = decodeB64ToObj(b64);
+        const ok = importState(obj);
+
+        // atualizar local + UI
+        saveLocal();
+
+        // importante: setar lastSentB64 para não re-enviar e criar loop
+        lastSentB64 = b64;
+
+        renderAll();
+        setStatus("Dados carregados", true);
+
+        return ok;
+      }catch(e){
+        setStatus("Falha ao carregar", false);
+        return false;
+      }finally{
+        // pequena folga
+        setTimeout(() => { isApplyingExternalState = false; }, 120);
+      }
+    };
+
+    /******************************************************************
+     * UI / RENDER
+     ******************************************************************/
+    const mainTitle = document.getElementById("mainTitle");
+    const mainDesc  = document.getElementById("mainDesc");
+    const mainBody  = document.getElementById("mainBody");
+
+    let activeTab = "estoque";
+
+    function renderAll(){
+      renderKPIs();
+      renderTab();
+      refreshSellSelect();
+    }
+
+    function renderKPIs(){
+      const totalStock = state.products.reduce((acc,p)=>acc + (Number(p.qty)||0), 0);
+      const totalProfit = state.sales.reduce((acc,s)=>acc + (Number(s.profit)||0), 0);
+      document.getElementById("kpiStock").textContent = totalStock;
+      document.getElementById("kpiProfit").textContent = moneyBR(totalProfit);
+      document.getElementById("kpiSalesCount").textContent = state.sales.length;
+    }
+
+    function renderTab(){
+      if (activeTab === "estoque"){
+        mainTitle.textContent = "Estoque";
+        mainDesc.textContent  = "Cadastre seus produtos e acompanhe o estoque.";
+        renderStock();
+      } else if (activeTab === "vender"){
+        mainTitle.textContent = "Vender";
+        mainDesc.textContent  = "Registre vendas e acompanhe seu lucro.";
+        renderSell();
+      } else {
+        mainTitle.textContent = "Histórico";
+        mainDesc.textContent  = "Veja todas as vendas registradas.";
+        renderHistory();
+      }
+    }
+
+    function renderStock(){
+      const list = document.createElement("div");
+      list.className = "list";
+
+      const products = [...state.products].sort((a,b)=> (b.createdAt||"").localeCompare(a.createdAt||""));
+
+      if (products.length === 0){
+        list.innerHTML = `<div class="empty">Nenhum produto cadastrado. Clique em “+ Cadastrar”.</div>`;
+        mainBody.innerHTML = "";
+        mainBody.appendChild(list);
+        return;
+      }
+
+      for (const p of products){
+        const el = document.createElement("div");
+        el.className = "item";
+        el.innerHTML = `
+          <div class="left">
+            <div class="name">${escapeHtml(p.name || "Produto")}</div>
+            <div class="meta">
+              <span class="badge">Qtd: ${Number(p.qty)||0}</span>
+              <span class="badge">Custo: ${moneyBR(p.cost||0)}</span>
+              <span class="badge">Sug.: ${moneyBR(p.price||0)}</span>
+            </div>
+            ${p.notes ? `<div class="muted">${escapeHtml(p.notes)}</div>` : ""}
           </div>
+          <div class="right">
+            <button class="btn" data-act="edit" data-id="${p.id}">Editar</button>
+            <button class="btn danger" data-act="del" data-id="${p.id}">Excluir</button>
+          </div>
+        `;
+        list.appendChild(el);
+      }
+
+      mainBody.innerHTML = "";
+      mainBody.appendChild(list);
+
+      list.addEventListener("click", (e)=>{
+        const btn = e.target.closest("button");
+        if(!btn) return;
+        const id = btn.getAttribute("data-id");
+        const act = btn.getAttribute("data-act");
+        if (act === "del") deleteProduct(id);
+        if (act === "edit") openProductModal(id);
+      }, { once:true });
+    }
+
+    function renderSell(){
+      const wrap = document.createElement("div");
+      wrap.innerHTML = `
+        <div class="empty">
+          Clique em “Registrar venda” e escolha o produto.
+          <div class="muted">Dica: você pode ajustar o preço de venda na hora.</div>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn primary" id="btnOpenSell">Registrar venda</button>
         </div>
       `;
+      mainBody.innerHTML = "";
+      mainBody.appendChild(wrap);
+
+      wrap.querySelector("#btnOpenSell").addEventListener("click", ()=>{
+        openSellModal();
+      });
+    }
+
+    function renderHistory(){
+      const list = document.createElement("div");
+      list.className = "list";
+
+      const sales = [...state.sales].sort((a,b)=> (b.createdAt||"").localeCompare(a.createdAt||""));
+
+      if (sales.length === 0){
+        list.innerHTML = `<div class="empty">Nenhuma venda registrada ainda.</div>`;
+        mainBody.innerHTML = "";
+        mainBody.appendChild(list);
+        return;
+      }
+
+      for (const s of sales){
+        const el = document.createElement("div");
+        el.className = "item";
+        el.innerHTML = `
+          <div class="left">
+            <div class="name">${escapeHtml(s.productName || "Venda")}</div>
+            <div class="meta">
+              <span class="badge">Qtd: ${Number(s.qty)||0}</span>
+              <span class="badge">Venda: ${moneyBR(s.price||0)}</span>
+              <span class="badge">Lucro: ${moneyBR(s.profit||0)}</span>
+            </div>
+            ${s.notes ? `<div class="muted">${escapeHtml(s.notes)}</div>` : ""}
+            <div class="muted">${formatDate(s.createdAt)}</div>
+          </div>
+          <div class="right">
+            <button class="btn danger" data-act="delSale" data-id="${s.id}">Excluir</button>
+          </div>
+        `;
+        list.appendChild(el);
+      }
+
+      mainBody.innerHTML = "";
+      mainBody.appendChild(list);
+
+      list.addEventListener("click", (e)=>{
+        const btn = e.target.closest("button");
+        if(!btn) return;
+        if (btn.getAttribute("data-act") === "delSale"){
+          deleteSale(btn.getAttribute("data-id"));
+        }
+      }, { once:true });
+    }
+
+    function refreshSellSelect(){
+      const sel = document.getElementById("sProduct");
+      if (!sel) return;
+
+      const inStock = state.products.filter(p => (Number(p.qty)||0) > 0);
+      sel.innerHTML = "";
+
+      if (inStock.length === 0){
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Nenhum produto com estoque";
+        sel.appendChild(opt);
+        return;
+      }
+
+      for (const p of inStock){
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = `${p.name} (Qtd: ${Number(p.qty)||0})`;
+        sel.appendChild(opt);
+      }
+    }
+
+    function formatDate(iso){
+      try{
+        if(!iso) return "";
+        const d = new Date(iso);
+        return d.toLocaleString("pt-BR");
+      }catch(e){
+        return "";
+      }
+    }
+
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, s => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[s]));
+    }
+
+    /******************************************************************
+     * AÇÕES: Produtos / Vendas
+     ******************************************************************/
+    function openProductModal(editId=null){
+      const modal = document.getElementById("modalProduct");
+      modal.classList.add("open");
+
+      const pName = document.getElementById("pName");
+      const pCost = document.getElementById("pCost");
+      const pPrice= document.getElementById("pPrice");
+      const pQty  = document.getElementById("pQty");
+      const pNotes= document.getElementById("pNotes");
+
+      modal.dataset.editId = editId || "";
+
+      if (editId){
+        const p = state.products.find(x => x.id === editId);
+        pName.value  = p?.name || "";
+        pCost.value  = (p?.cost ?? "");
+        pPrice.value = (p?.price ?? "");
+        pQty.value   = (p?.qty ?? "");
+        pNotes.value = p?.notes || "";
+      } else {
+        pName.value=""; pCost.value=""; pPrice.value=""; pQty.value="1"; pNotes.value="";
+      }
+    }
+
+    function closeProductModal(){
+      document.getElementById("modalProduct").classList.remove("open");
+    }
+
+    function saveProduct(){
+      const modal = document.getElementById("modalProduct");
+      const editId = modal.dataset.editId || "";
+
+      const name  = document.getElementById("pName").value.trim();
+      const cost  = toNumberBR(document.getElementById("pCost").value);
+      const price = toNumberBR(document.getElementById("pPrice").value);
+      const qty   = Math.max(0, parseInt(document.getElementById("pQty").value || "0", 10) || 0);
+      const notes = document.getElementById("pNotes").value.trim();
+
+      if (!name){
+        alert("Informe o nome do produto.");
+        return;
+      }
+
+      if (editId){
+        const p = state.products.find(x => x.id === editId);
+        if (!p) return;
+        p.name = name; p.cost = cost; p.price = price; p.qty = qty; p.notes = notes;
+      } else {
+        state.products.push({
+          id: uid(),
+          name, cost, price, qty, notes,
+          createdAt: nowISO()
+        });
+      }
+
+      closeProductModal();
+      renderAll();
+      requestSave("produto");
+    }
+
+    function deleteProduct(id){
+      const p = state.products.find(x => x.id === id);
+      if(!p) return;
+      if (!confirm(`Excluir "${p.name}"?`)) return;
+
+      // remove produto e também remove vendas associadas? (opcional)
+      state.products = state.products.filter(x => x.id !== id);
+      state.sales = state.sales.filter(s => s.productId !== id);
+
+      renderAll();
+      requestSave("deleteProduct");
+    }
+
+    function openSellModal(){
+      refreshSellSelect();
+
+      const modal = document.getElementById("modalSell");
+      modal.classList.add("open");
+
+      document.getElementById("sQty").value = "1";
+      document.getElementById("sPrice").value = "";
+      document.getElementById("sNotes").value = "";
+
+      // sugere preço baseado no produto selecionado
+      const sel = document.getElementById("sProduct");
+      const id = sel.value;
+      const p = state.products.find(x => x.id === id);
+      if (p && p.price != null) document.getElementById("sPrice").value = String(p.price);
+    }
+
+    function closeSellModal(){
+      document.getElementById("modalSell").classList.remove("open");
+    }
+
+    function confirmSell(){
+      const productId = document.getElementById("sProduct").value;
+      const p = state.products.find(x => x.id === productId);
+
+      if (!p || (Number(p.qty)||0) <= 0){
+        alert("Selecione um produto com estoque.");
+        return;
+      }
+
+      const qty = Math.max(1, parseInt(document.getElementById("sQty").value || "1", 10) || 1);
+      if (qty > (Number(p.qty)||0)){
+        alert("Quantidade maior que o estoque.");
+        return;
+      }
+
+      const price = toNumberBR(document.getElementById("sPrice").value);
+      const notes = document.getElementById("sNotes").value.trim();
+
+      const unitCost = Number(p.cost)||0;
+      const profit = (price - unitCost) * qty;
+
+      // baixa estoque
+      p.qty = (Number(p.qty)||0) - qty;
+
+      // registra venda
+      state.sales.push({
+        id: uid(),
+        productId: p.id,
+        productName: p.name,
+        qty,
+        price,
+        cost: unitCost,
+        profit,
+        notes,
+        createdAt: nowISO()
+      });
+
+      closeSellModal();
+      renderAll();
+      requestSave("sell");
+    }
+
+    function deleteSale(id){
+      const s = state.sales.find(x => x.id === id);
+      if (!s) return;
+      if (!confirm(`Excluir venda de "${s.productName}"?`)) return;
+
+      // opcional: devolver ao estoque
+      const p = state.products.find(x => x.id === s.productId);
+      if (p) p.qty = (Number(p.qty)||0) + (Number(s.qty)||0);
+
+      state.sales = state.sales.filter(x => x.id !== id);
+
+      renderAll();
+      requestSave("deleteSale");
+    }
+
+    /******************************************************************
+     * BACKUP / RESET
+     ******************************************************************/
+    function openBackup(){
+      const modal = document.getElementById("modalBackup");
+      modal.classList.add("open");
+      document.getElementById("backupText").value = encodeStateToB64();
+    }
+    function closeBackup(){
+      document.getElementById("modalBackup").classList.remove("open");
+    }
+    function copyBackup(){
+      const t = document.getElementById("backupText");
+      t.select();
+      document.execCommand("copy");
+      setStatus("Backup copiado", true);
+      setTimeout(()=>setStatus("Pronto", true), 900);
+    }
+    function restoreBackup(){
+      const b64 = document.getElementById("backupText").value.trim();
+      if (!b64) return;
+      try{
+        isApplyingExternalState = true;
+        const obj = decodeB64ToObj(b64);
+        importState(obj);
+        saveLocal();
+        lastSentB64 = b64;
+        renderAll();
+        requestSave("restore");
+        closeBackup();
+      }catch(e){
+        alert("Backup inválido.");
+      }finally{
+        setTimeout(()=>{ isApplyingExternalState=false; }, 150);
+      }
+    }
+
+    function resetAll(){
+      if(!confirm("Isso vai apagar tudo. Deseja continuar?")) return;
+      state = { products: [], sales: [] };
+      saveLocal();
+      lastSentB64 = encodeStateToB64();
+      renderAll();
+      requestSave("reset");
+    }
+
+    /******************************************************************
+     * TABS / EVENTOS
+     ******************************************************************/
+    document.querySelectorAll(".tab").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+        btn.classList.add("active");
+        activeTab = btn.dataset.tab;
+        renderTab();
+      });
     });
-  }
 
-  function toggleDetalhes(key){
-    const d = document.getElementById(`detalhes-${key}`);
-    const s = document.getElementById(`seta-${key}`);
-    const aberto = d.style.display === "block";
-    d.style.display = aberto ? "none" : "block";
-    s.textContent = aberto ? "▶" : "▼";
-  }
+    document.getElementById("btnAdd").addEventListener("click", ()=>openProductModal());
+    document.getElementById("btnBackup").addEventListener("click", openBackup);
+    document.getElementById("btnReset").addEventListener("click", resetAll);
 
-  function excluirVenda(key){
-    if(!confirm("Excluir esta venda?")) return;
+    document.getElementById("closeProduct").addEventListener("click", closeProductModal);
+    document.getElementById("saveProduct").addEventListener("click", saveProduct);
 
-    const idx = historico.findIndex(h => h.ts === key);
-    if(idx === -1) return;
+    document.getElementById("closeSell").addEventListener("click", closeSellModal);
+    document.getElementById("confirmSell").addEventListener("click", confirmSell);
 
-    const h = historico[idx];
-    lucroTotal -= (h.venda - h.compra);
+    document.getElementById("closeBackup").addEventListener("click", closeBackup);
+    document.getElementById("copyBackup").addEventListener("click", copyBackup);
+    document.getElementById("restoreBackup").addEventListener("click", restoreBackup);
 
-    historico.splice(idx, 1);
-    salvarDados();
-    atualizarDashboard();
-    atualizarHistorico();
-  }
+    // fechar modal clicando fora
+    document.querySelectorAll(".modal").forEach(m=>{
+      m.addEventListener("click", (e)=>{
+        if (e.target === m) m.classList.remove("open");
+      });
+    });
 
-  // INIT
-  carregarDados();
-  mostrar("dashboard");
-</script>
+    // Atualiza sugestão de preço na venda quando muda produto
+    document.getElementById("sProduct").addEventListener("change", ()=>{
+      const id = document.getElementById("sProduct").value;
+      const p = state.products.find(x => x.id === id);
+      if (p) document.getElementById("sPrice").value = String(p.price ?? "");
+    });
+
+    /******************************************************************
+     * INIT
+     ******************************************************************/
+    (function init(){
+      // carrega do localStorage (browser)
+      loadLocal();
+      renderAll();
+
+      // se estiver no Kodular, o TinyDB vai injetar depois pelo Evaluate JS:
+      // window.loadFromKodularB64("...")
+
+      setStatus("Pronto", true);
+      // primeira gravação “segura”
+      requestSave("init");
+    })();
+  </script>
+</body>
+</html>
