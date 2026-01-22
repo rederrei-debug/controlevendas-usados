@@ -135,7 +135,7 @@ button.action:disabled{
   border-radius:18px;
   padding:15px;
   margin-bottom:15px;
-  position:relative; /* necessário para a lixeira */
+  position:relative; /* lixeira */
   background:var(--card);
 }
 
@@ -203,7 +203,7 @@ button.action:disabled{
   display:none;
 }
 
-/* BARRA DE FILTROS (Busca + Ordenação) */
+/* Barra de filtros (Busca + Ordenação) */
 .filtros{
   display:flex;
   gap:10px;
@@ -249,7 +249,7 @@ button.action:disabled{
 <div class="container">
 
   <!-- DASHBOARD -->
-  <div id="dashboard" class="card">
+  <div id="dashboard" class="card screen">
     <div class="dashboard">
       <div class="stat">Produtos em estoque<span id="qtd">0</span></div>
       <div class="stat">Valor em estoque<span>R$ <span id="valorEstoque">0.00</span></span></div>
@@ -258,7 +258,7 @@ button.action:disabled{
   </div>
 
   <!-- CADASTRO -->
-  <div id="cadastro" class="card hidden">
+  <div id="cadastro" class="card screen hidden">
     <input id="nomeProduto" placeholder="Nome do produto">
     <input id="valorCompra" type="number" placeholder="Valor de compra">
     <input id="imgInput" type="file" accept="image/*" onchange="carregarImagem(event)">
@@ -266,15 +266,14 @@ button.action:disabled{
   </div>
 
   <!-- VENDA -->
-  <div id="venda" class="hidden"></div>
+  <div id="venda" class="screen hidden"></div>
 
   <!-- HISTÓRICO -->
-  <div id="historico" class="card hidden">
+  <div id="historico" class="card screen hidden">
 
     <!-- Busca no histórico -->
     <input id="buscaHistorico" placeholder="Buscar no histórico (nome/nota)" oninput="atualizarHistorico()">
 
-    <!-- filtros existentes + ordenação -->
     <div class="filtros">
       <select id="filtroMes" class="grow" onchange="atualizarHistorico()">
         <option value="">Todos os meses</option>
@@ -306,10 +305,6 @@ let imagemTemp = null;
 let imagemCarregando = false;
 
 let saveTimer = null;
-
-/* ======= BUSCA/ORDENAÇÃO (estado de UI) ======= */
-let buscaVenda = "";
-let ordemVenda = "recente";
 
 /* ========= helpers base64 (unicode safe) ========= */
 function toB64Unicode(str){
@@ -396,7 +391,10 @@ window.loadFromKodularB64 = function(b64){
 
     atualizarDashboard();
     atualizarHistorico();
-    if(!document.getElementById("venda").classList.contains("hidden")) renderVenda();
+
+    if(!document.getElementById("venda").classList.contains("hidden")){
+      renderVenda();
+    }
   }catch(e){
     console.log("loadFromKodularB64 erro:", e);
   }
@@ -434,7 +432,7 @@ function carregarDados(){
 
 /* ========= NAV ========= */
 function mostrar(id){
-  document.querySelectorAll('.card,#venda').forEach(e => e.classList.add('hidden'));
+  document.querySelectorAll('.screen').forEach(e => e.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
   if(id === "venda") renderVenda();
 }
@@ -500,17 +498,27 @@ function cadastrar(){
 
   salvarDados();
   atualizarDashboard();
+
+  // se estiver na aba vender, atualiza a lista sem quebrar teclado
+  if(!document.getElementById("venda").classList.contains("hidden")){
+    updateVendaList();
+  }
 }
 
-/* ========= VENDA (com busca + ordenação + lixeira) ========= */
-function renderVenda(){
-  const vendaEl = document.getElementById("venda");
+/* =========================================================
+   VENDA (corrige teclado sumindo: NÃO recria input a cada tecla)
+   ========================================================= */
+let vendaUIReady = false;
+let vendaRefreshTimer = null;
 
-  // UI de filtros da aba vender
+function ensureVendaUI(){
+  if(vendaUIReady) return;
+
+  const vendaEl = document.getElementById("venda");
   vendaEl.innerHTML = `
     <div class="card">
       <div class="filtros">
-        <input id="buscaVenda" class="grow" placeholder="Buscar no estoque (nome)" value="${buscaVenda.replace(/"/g,'&quot;')}">
+        <input id="buscaVenda" class="grow" placeholder="Buscar no estoque (nome)">
         <select id="ordemVenda">
           <option value="recente">Mais recente</option>
           <option value="antigo">Mais antigo</option>
@@ -524,29 +532,39 @@ function renderVenda(){
     </div>
   `;
 
-  // aplica estado da ordenação no select
-  document.getElementById("ordemVenda").value = ordemVenda;
+  const inputBusca = document.getElementById("buscaVenda");
+  const selectOrdem = document.getElementById("ordemVenda");
 
-  // listeners (não salva no storage, só filtra)
-  document.getElementById("buscaVenda").oninput = (e) => {
-    buscaVenda = e.target.value || "";
-    renderVenda();
-  };
-  document.getElementById("ordemVenda").onchange = (e) => {
-    ordemVenda = e.target.value || "recente";
-    renderVenda();
-  };
+  inputBusca.addEventListener("input", () => {
+    clearTimeout(vendaRefreshTimer);
+    vendaRefreshTimer = setTimeout(updateVendaList, 120);
+  });
 
+  selectOrdem.addEventListener("change", () => {
+    updateVendaList();
+  });
+
+  vendaUIReady = true;
+}
+
+function renderVenda(){
+  ensureVendaUI();
+  updateVendaList();
+}
+
+function updateVendaList(){
   const listaEl = document.getElementById("listaVenda");
+  if(!listaEl) return;
 
-  // filtra
+  const busca = norm((document.getElementById("buscaVenda").value || "").trim());
+  const ordem = (document.getElementById("ordemVenda").value || "recente");
+
   let lista = estoque.slice();
-  const q = norm(buscaVenda.trim());
-  if(q){
-    lista = lista.filter(p => norm(p.nome).includes(q));
+
+  if(busca){
+    lista = lista.filter(p => norm(p.nome).includes(busca));
   }
 
-  // ordena
   lista.sort((a,b)=>{
     const ca = Number(a.createdAt || 0);
     const cb = Number(b.createdAt || 0);
@@ -555,7 +573,7 @@ function renderVenda(){
     const pa = Number(a.compra || 0);
     const pb = Number(b.compra || 0);
 
-    switch(ordemVenda){
+    switch(ordem){
       case "antigo": return ca - cb;
       case "nomeAZ": return na.localeCompare(nb);
       case "nomeZA": return nb.localeCompare(na);
@@ -571,10 +589,10 @@ function renderVenda(){
     return;
   }
 
-  // render cards
-  lista.forEach((p) => {
+  let html = "";
+  lista.forEach(p => {
     const pid = p.id;
-    listaEl.innerHTML += `
+    html += `
       <div class="produto">
         <button class="btn-del" title="Excluir produto" onclick="excluirProdutoById('${pid}')">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -586,24 +604,30 @@ function renderVenda(){
         <div>
           <strong>${p.nome}</strong><br>
           <small>Custo: R$ ${Number(p.compra).toFixed(2)}</small>
+
           <input type="date" id="data-${pid}">
           <input type="number" placeholder="Valor de venda" id="venda-${pid}">
           <textarea placeholder="Nota / Detalhes" id="nota-${pid}"></textarea>
+
           <button class="action" style="background:var(--success)" onclick="venderById('${pid}')">Vender</button>
         </div>
       </div>
     `;
   });
+
+  listaEl.innerHTML = html;
 }
 
 function excluirProdutoById(id){
   if(!confirm("Excluir este produto do estoque?")) return;
+
   const idx = estoque.findIndex(p => p.id === id);
   if(idx === -1) return;
+
   estoque.splice(idx, 1);
   salvarDados();
   atualizarDashboard();
-  renderVenda();
+  updateVendaList();
 }
 
 function venderById(id){
@@ -620,15 +644,13 @@ function venderById(id){
 
   lucroTotal += v - Number(p.compra);
 
-  const ts = dataVenda.getTime();
-
   historico.push({
     ...p,
     venda: v,
     nota,
     data: dataVenda.toLocaleDateString("pt-BR"),
     mes: dataVenda.getMonth(),
-    ts
+    ts: dataVenda.getTime()
   });
 
   estoque.splice(idx, 1);
@@ -636,7 +658,7 @@ function venderById(id){
   salvarDados();
   atualizarDashboard();
   atualizarHistorico();
-  renderVenda();
+  updateVendaList();
 }
 
 /* ========= DASHBOARD ========= */
@@ -656,12 +678,10 @@ function atualizarHistorico(){
 
   let lista = historico.slice();
 
-  // filtra por mês
   if(mes !== ""){
     lista = lista.filter(h => String(h.mes) === String(mes));
   }
 
-  // filtra por busca (nome e nota)
   if(busca){
     lista = lista.filter(h => {
       const alvo = norm(h.nome) + " " + norm(h.nota || "");
@@ -669,7 +689,6 @@ function atualizarHistorico(){
     });
   }
 
-  // ordena
   lista.sort((a,b)=>{
     const la = (Number(a.venda) - Number(a.compra));
     const lb = (Number(b.venda) - Number(b.compra));
@@ -689,7 +708,7 @@ function atualizarHistorico(){
   }
 
   lista.forEach((h)=>{
-    const key = h.ts; // chave estável
+    const key = h.ts;
     historicoLista.innerHTML += `
       <div class="historico-item">
         <div class="historico-header">
