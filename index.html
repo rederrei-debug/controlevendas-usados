@@ -221,7 +221,7 @@ button.action:disabled{
   font-weight:700;
 }
 
-/* MOBILE: dashboard em coluna e cards mais confortáveis */
+/* MOBILE */
 @media (max-width: 520px){
   header{padding:16px;font-size:20px}
   .container{padding:12px}
@@ -230,7 +230,6 @@ button.action:disabled{
   .stat span{font-size:34px}
   .historico-header{grid-template-columns:64px 1fr 78px 24px}
   .historico-header img{width:64px;height:64px}
-
   .filtros{flex-direction:column; align-items:stretch;}
 }
 </style>
@@ -270,8 +269,6 @@ button.action:disabled{
 
   <!-- HISTÓRICO -->
   <div id="historico" class="card screen hidden">
-
-    <!-- Busca no histórico -->
     <input id="buscaHistorico" placeholder="Buscar no histórico (nome/nota)" oninput="atualizarHistorico()">
 
     <div class="filtros">
@@ -305,6 +302,9 @@ let imagemTemp = null;
 let imagemCarregando = false;
 
 let saveTimer = null;
+
+/* ========= estado de navegação ========= */
+let currentTab = "dashboard";
 
 /* ========= helpers base64 (unicode safe) ========= */
 function toB64Unicode(str){
@@ -392,7 +392,7 @@ window.loadFromKodularB64 = function(b64){
     atualizarDashboard();
     atualizarHistorico();
 
-    if(!document.getElementById("venda").classList.contains("hidden")){
+    if(currentTab === "venda"){
       renderVenda();
     }
   }catch(e){
@@ -431,10 +431,36 @@ function carregarDados(){
 }
 
 /* ========= NAV ========= */
+function resetVendaPesquisa(){
+  if(!vendaUIReady) return;
+  const input = document.getElementById("buscaVenda");
+  if(input) input.value = "";      // <-- limpa a pesquisa
+  // se quiser resetar ordenação também, descomente:
+  // const ordem = document.getElementById("ordemVenda");
+  // if(ordem) ordem.value = "recente";
+}
+
 function mostrar(id){
+  // Se saiu da aba Vender, limpa a pesquisa para quando voltar
+  if(currentTab === "venda" && id !== "venda"){
+    resetVendaPesquisa();
+  }
+
   document.querySelectorAll('.screen').forEach(e => e.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
-  if(id === "venda") renderVenda();
+
+  if(id === "venda"){
+    // Sempre que entrar em Vender: limpa pesquisa e mostra tudo
+    renderVenda();
+    resetVendaPesquisa();
+    updateVendaList();
+  }
+
+  if(id === "historico"){
+    atualizarHistorico();
+  }
+
+  currentTab = id;
 }
 
 /* ========= IMAGEM (compressão) ========= */
@@ -499,14 +525,13 @@ function cadastrar(){
   salvarDados();
   atualizarDashboard();
 
-  // se estiver na aba vender, atualiza a lista sem quebrar teclado
-  if(!document.getElementById("venda").classList.contains("hidden")){
+  if(currentTab === "venda"){
     updateVendaList();
   }
 }
 
 /* =========================================================
-   VENDA (corrige teclado sumindo: NÃO recria input a cada tecla)
+   VENDA (UI fixa + lista dinâmica, teclado não some)
    ========================================================= */
 let vendaUIReady = false;
 let vendaRefreshTimer = null;
@@ -668,7 +693,7 @@ function atualizarDashboard(){
   lucro.textContent = lucroTotal.toFixed(2);
 }
 
-/* ========= HISTÓRICO (com busca + ordenação) ========= */
+/* ========= HISTÓRICO ========= */
 function atualizarHistorico(){
   const mes = document.getElementById("filtroMes").value;
   const busca = norm((document.getElementById("buscaHistorico").value || "").trim());
