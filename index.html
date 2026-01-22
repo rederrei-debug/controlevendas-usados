@@ -35,7 +35,7 @@ header{
   color:#fff;
 }
 
-/* NAV (ajustado p/ celular: 2x2) */
+/* NAV (2x2) */
 nav{
   display:flex;
   flex-wrap:wrap;
@@ -101,7 +101,7 @@ button.action:disabled{
   cursor:not-allowed;
 }
 
-/* Botões secundários (foto) */
+/* Botões foto */
 .actions-row{
   display:flex;
   gap:10px;
@@ -120,7 +120,6 @@ button.action:disabled{
 .actions-row button:active{transform:scale(.99)}
 .actions-row .btn-camera{border-color:rgba(37,99,235,.35)}
 .actions-row .btn-galeria{border-color:rgba(17,24,39,.15)}
-.actions-row .btn-limpar{border-color:rgba(220,38,38,.30); color:var(--danger)}
 
 /* Preview foto */
 .preview-wrap{
@@ -139,6 +138,12 @@ button.action:disabled{
   border-radius:12px;
   background:#e5e7eb;
 }
+.preview-hint{
+  display:block;
+  margin-top:8px;
+  color:#6b7280;
+  font-size:13px;
+}
 
 /* DASHBOARD */
 .dashboard{
@@ -146,21 +151,18 @@ button.action:disabled{
   grid-template-columns:repeat(3,1fr);
   gap:15px;
 }
-
 .stat{
   background:#f9fafb;
   padding:20px;
   border-radius:18px;
   border:1px solid var(--border);
 }
-
 .stat span{
   display:block;
   font-size:28px;
   font-weight:900;
   margin-top:8px;
 }
-
 .stat:nth-child(1) span{color:var(--warning)}
 .stat:nth-child(2) span{color:var(--primary)}
 .stat:nth-child(3) span{color:var(--success)}
@@ -177,7 +179,6 @@ button.action:disabled{
   position:relative;
   background:var(--card);
 }
-
 .produto img{
   width:90px;
   height:90px;
@@ -213,28 +214,24 @@ button.action:disabled{
   margin-bottom:12px;
   background:var(--card);
 }
-
 .historico-header{
   display:grid;
   grid-template-columns:70px 1fr 90px 24px;
   align-items:center;
   gap:6px;
 }
-
 .historico-header img{
   width:70px;
   height:70px;
   object-fit:cover;
   border-radius:14px;
 }
-
 .seta{
   font-size:18px;
   text-align:center;
   cursor:pointer;
   user-select:none;
 }
-
 .historico-detalhes{
   margin-top:10px;
   padding-top:10px;
@@ -242,7 +239,7 @@ button.action:disabled{
   display:none;
 }
 
-/* Barra de filtros (Busca + Ordenação) */
+/* Filtros */
 .filtros{
   display:flex;
   gap:10px;
@@ -252,7 +249,6 @@ button.action:disabled{
 .filtros .grow{ flex:1; }
 .filtros input, .filtros select{ margin-bottom:0; }
 
-/* Texto quando não tem nada */
 .vazio{
   text-align:center;
   padding:18px 10px;
@@ -300,18 +296,17 @@ button.action:disabled{
     <input id="nomeProduto" placeholder="Nome do produto">
     <input id="valorCompra" type="number" placeholder="Valor de compra">
 
-    <!-- Inputs escondidos: um para câmera, outro para galeria -->
-    <input id="imgCamera" type="file" accept="image/*" capture="environment" onchange="carregarImagem(event)" style="display:none">
+    <!-- fallback (browser): pode abrir galeria mesmo; no Kodular a câmera vem via setCameraPhoto() -->
     <input id="imgGaleria" type="file" accept="image/*" onchange="carregarImagem(event)" style="display:none">
 
     <div class="actions-row">
-      <button type="button" class="btn-camera" onclick="abrirCamera()">📷 Tirar foto</button>
+      <button type="button" class="btn-camera" onclick="tirarFoto()">📷 Tirar foto</button>
       <button type="button" class="btn-galeria" onclick="abrirGaleria()">🖼️ Galeria</button>
-      <button type="button" class="btn-limpar" onclick="limparFoto()">✖</button>
     </div>
 
-    <div id="previewWrap" class="preview-wrap">
+    <div id="previewWrap" class="preview-wrap" onclick="limparFoto()">
       <img id="previewImg" class="preview-img" alt="Prévia da foto">
+      <span class="preview-hint">Toque na foto para remover</span>
     </div>
 
     <button class="action" id="btnCadastrar" onclick="cadastrar()">Cadastrar Produto</button>
@@ -355,8 +350,6 @@ let imagemTemp = null;
 let imagemCarregando = false;
 
 let saveTimer = null;
-
-/* ========= estado de navegação ========= */
 let currentTab = "dashboard";
 
 /* ========= helpers base64 (unicode safe) ========= */
@@ -382,7 +375,7 @@ function norm(txt){
   }
 }
 
-/* ========= comunicação com Kodular ========= */
+/* ========= Kodular bridge ========= */
 function isKodular(){
   return !!(window.AppInventor && typeof window.AppInventor.setWebViewString === "function");
 }
@@ -398,6 +391,7 @@ function enviarParaKodularDebounced(updatedAt){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try{
+      // mantém igual como você já vinha salvando (b64 puro)
       const b64 = exportSnapshotB64(updatedAt);
       window.AppInventor.setWebViewString(b64);
     }catch(e){
@@ -406,18 +400,16 @@ function enviarParaKodularDebounced(updatedAt){
   }, 500);
 }
 
-/* Função chamada pelo Kodular via EvaluateJS */
+/* Kodular chama isso via EvaluateJavaScript para carregar dados */
 window.loadFromKodularB64 = function(b64){
   try{
     if(!b64) return;
-
     const json = fromB64Unicode(b64);
     const data = JSON.parse(json);
     if(!data || typeof data !== "object") return;
 
     const remoteUpdated = Number(data.updatedAt || 0);
     const localUpdated  = Number(localStorage.getItem("updatedAt") || 0);
-
     if(localUpdated && remoteUpdated && remoteUpdated <= localUpdated) return;
 
     estoque = Array.isArray(data.estoque) ? data.estoque : [];
@@ -445,7 +437,6 @@ window.loadFromKodularB64 = function(b64){
 /* ========= STORAGE ========= */
 function salvarDados(){
   const updatedAt = Date.now();
-
   try{
     localStorage.setItem("estoque", JSON.stringify(estoque));
     localStorage.setItem("historico", JSON.stringify(historico));
@@ -454,7 +445,6 @@ function salvarDados(){
   }catch(e){
     console.log("localStorage cheio/erro:", e);
   }
-
   enviarParaKodularDebounced(updatedAt);
 }
 
@@ -472,7 +462,7 @@ function carregarDados(){
   atualizarHistorico();
 }
 
-/* ========= reset pesquisas (quando troca de aba) ========= */
+/* ========= reset pesquisas ========= */
 function resetVendaPesquisa(){
   if(!vendaUIReady) return;
   const input = document.getElementById("buscaVenda");
@@ -480,7 +470,6 @@ function resetVendaPesquisa(){
   const ordem = document.getElementById("ordemVenda");
   if(ordem) ordem.value = "recente";
 }
-
 function resetHistoricoPesquisa(){
   const b = document.getElementById("buscaHistorico");
   if(b) b.value = "";
@@ -492,18 +481,12 @@ function resetHistoricoPesquisa(){
 
 /* ========= NAV ========= */
 function mostrar(id){
-  // ao SAIR de uma aba, limpa pesquisas (pra quando voltar mostrar tudo)
-  if(currentTab === "venda" && id !== "venda"){
-    resetVendaPesquisa();
-  }
-  if(currentTab === "historico" && id !== "historico"){
-    resetHistoricoPesquisa();
-  }
+  if(currentTab === "venda" && id !== "venda") resetVendaPesquisa();
+  if(currentTab === "historico" && id !== "historico") resetHistoricoPesquisa();
 
   document.querySelectorAll('.screen').forEach(e => e.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 
-  // ao ENTRAR, também garante tudo limpo e lista completa
   if(id === "venda"){
     renderVenda();
     resetVendaPesquisa();
@@ -517,16 +500,24 @@ function mostrar(id){
   currentTab = id;
 }
 
-/* ========= CAMERA / GALERIA (abre direto pelo app) ========= */
-function abrirCamera(){
-  document.getElementById("imgCamera").click();
+/* ========= FOTO (Kodular câmera + fallback galeria) ========= */
+function tirarFoto(){
+  // NO KODULAR: chama a câmera do app (mais confiável)
+  if(isKodular()){
+    // você vai capturar isso no WebViewer1.WebViewStringChange (veja instruções abaixo)
+    window.AppInventor.setWebViewString("CMD:CAMERA");
+    return;
+  }
+  // fallback browser: pode abrir galeria mesmo dependendo do Android
+  alert("No app (Kodular) a câmera abre direto. No navegador pode abrir a galeria.");
 }
+
 function abrirGaleria(){
   document.getElementById("imgGaleria").click();
 }
+
 function limparFoto(){
   imagemTemp = null;
-  document.getElementById("imgCamera").value = "";
   document.getElementById("imgGaleria").value = "";
   const wrap = document.getElementById("previewWrap");
   const img = document.getElementById("previewImg");
@@ -534,7 +525,55 @@ function limparFoto(){
   wrap.classList.remove("show");
 }
 
-/* ========= IMAGEM (compressão p/ não estourar limite e evitar bugs) ========= */
+/* Chamada pelo Kodular via EvaluateJavaScript:
+   setCameraPhoto("data:image/jpeg;base64,.....")  OU setCameraPhoto("...base64...")
+*/
+window.setCameraPhoto = function(dataUrlOrB64){
+  try{
+    if(!dataUrlOrB64) return;
+    let dataUrl = dataUrlOrB64;
+
+    if(!String(dataUrlOrB64).startsWith("data:")){
+      dataUrl = "data:image/jpeg;base64," + dataUrlOrB64;
+    }
+    carregarImagemDataUrl(dataUrl);
+  }catch(e){
+    console.log("setCameraPhoto erro:", e);
+  }
+};
+
+/* ========= IMAGEM (compressão forte p/ evitar bug) ========= */
+function carregarImagemDataUrl(dataUrl){
+  imagemCarregando = true;
+  document.getElementById("btnCadastrar").disabled = true;
+
+  const img = new Image();
+  img.onload = () => {
+    const max = 700;
+    let w = img.width, h = img.height;
+    const scale = Math.min(1, max / Math.max(w, h));
+    const cw = Math.round(w * scale);
+    const ch = Math.round(h * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = cw;
+    canvas.height = ch;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, cw, ch);
+
+    imagemTemp = canvas.toDataURL("image/jpeg", 0.75);
+
+    const wrap = document.getElementById("previewWrap");
+    const prev = document.getElementById("previewImg");
+    prev.src = imagemTemp;
+    wrap.classList.add("show");
+
+    imagemCarregando = false;
+    document.getElementById("btnCadastrar").disabled = false;
+  };
+  img.src = dataUrl;
+}
+
 function carregarImagem(e){
   const file = e.target.files && e.target.files[0];
   if(!file) return;
@@ -543,35 +582,7 @@ function carregarImagem(e){
   document.getElementById("btnCadastrar").disabled = true;
 
   const r = new FileReader();
-  r.onload = () => {
-    const img = new Image();
-    img.onload = () => {
-      const max = 700; // quanto maior, mais qualidade e mais peso
-      let w = img.width, h = img.height;
-      const scale = Math.min(1, max / Math.max(w, h));
-      const cw = Math.round(w * scale);
-      const ch = Math.round(h * scale);
-
-      const canvas = document.createElement("canvas");
-      canvas.width = cw;
-      canvas.height = ch;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, cw, ch);
-
-      // JPEG reduz MUITO o tamanho (menos travamento no cadastro rápido)
-      imagemTemp = canvas.toDataURL("image/jpeg", 0.75);
-
-      // preview
-      const wrap = document.getElementById("previewWrap");
-      const prev = document.getElementById("previewImg");
-      prev.src = imagemTemp;
-      wrap.classList.add("show");
-
-      imagemCarregando = false;
-      document.getElementById("btnCadastrar").disabled = false;
-    };
-    img.src = r.result;
-  };
+  r.onload = () => carregarImagemDataUrl(r.result);
   r.readAsDataURL(file);
 }
 
@@ -602,14 +613,10 @@ function cadastrar(){
   salvarDados();
   atualizarDashboard();
 
-  if(currentTab === "venda"){
-    updateVendaList();
-  }
+  if(currentTab === "venda") updateVendaList();
 }
 
-/* =========================================================
-   VENDA (UI fixa + lista dinâmica; teclado não some)
-   ========================================================= */
+/* ========= VENDA (UI fixa + lista dinâmica; teclado não some) ========= */
 let vendaUIReady = false;
 let vendaRefreshTimer = null;
 
@@ -642,9 +649,7 @@ function ensureVendaUI(){
     vendaRefreshTimer = setTimeout(updateVendaList, 120);
   });
 
-  selectOrdem.addEventListener("change", () => {
-    updateVendaList();
-  });
+  selectOrdem.addEventListener("change", () => updateVendaList());
 
   vendaUIReady = true;
 }
@@ -663,9 +668,7 @@ function updateVendaList(){
 
   let lista = estoque.slice();
 
-  if(busca){
-    lista = lista.filter(p => norm(p.nome).includes(busca));
-  }
+  if(busca) lista = lista.filter(p => norm(p.nome).includes(busca));
 
   lista.sort((a,b)=>{
     const ca = Number(a.createdAt || 0);
@@ -681,7 +684,6 @@ function updateVendaList(){
       case "nomeZA": return nb.localeCompare(na);
       case "custoMaior": return pb - pa;
       case "custoMenor": return pa - pb;
-      case "recente":
       default: return cb - ca;
     }
   });
@@ -722,10 +724,8 @@ function updateVendaList(){
 
 function excluirProdutoById(id){
   if(!confirm("Excluir este produto do estoque?")) return;
-
   const idx = estoque.findIndex(p => p.id === id);
   if(idx === -1) return;
-
   estoque.splice(idx, 1);
   salvarDados();
   atualizarDashboard();
@@ -734,7 +734,7 @@ function excluirProdutoById(id){
 
 function venderById(id){
   const idx = estoque.findIndex(p => p.id === id);
-  if(idx === -1) return alert("Produto não encontrado (atualize a tela).");
+  if(idx === -1) return alert("Produto não encontrado.");
 
   const v = parseFloat(document.getElementById(`venda-${id}`).value);
   if(!v) return alert("Informe o valor");
@@ -777,29 +777,20 @@ function atualizarHistorico(){
   const ordem = (document.getElementById("ordemHistorico").value || "recente");
 
   historicoLista.innerHTML = "";
-
   let lista = historico.slice();
 
-  if(mes !== ""){
-    lista = lista.filter(h => String(h.mes) === String(mes));
-  }
-
+  if(mes !== "") lista = lista.filter(h => String(h.mes) === String(mes));
   if(busca){
-    lista = lista.filter(h => {
-      const alvo = norm(h.nome) + " " + norm(h.nota || "");
-      return alvo.includes(busca);
-    });
+    lista = lista.filter(h => (norm(h.nome) + " " + norm(h.nota||"")).includes(busca));
   }
 
   lista.sort((a,b)=>{
     const la = (Number(a.venda) - Number(a.compra));
     const lb = (Number(b.venda) - Number(b.compra));
-
     switch(ordem){
       case "antigo": return Number(a.ts) - Number(b.ts);
       case "lucroMaior": return lb - la;
       case "lucroMenor": return la - lb;
-      case "recente":
       default: return Number(b.ts) - Number(a.ts);
     }
   });
