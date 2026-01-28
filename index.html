@@ -19,14 +19,17 @@
 }
 
 *{box-sizing:border-box}
+html,body{height:100%}
 body{
   margin:0;
   font-family:Segoe UI,Arial,sans-serif;
   background:var(--bg);
   color:var(--text);
+  -webkit-text-size-adjust:100%;
 }
+
 header{
-  padding:20px;
+  padding:18px;
   text-align:center;
   font-size:22px;
   font-weight:800;
@@ -34,7 +37,7 @@ header{
   color:#fff;
 }
 
-/* NAV (2x2 p/ celular) */
+/* NAV (2x2 no celular) */
 nav{
   display:flex;
   flex-wrap:wrap;
@@ -43,6 +46,7 @@ nav{
   max-width:900px;
   margin:auto;
 }
+
 nav button{
   flex:1 1 calc(50% - 10px);
   padding:14px;
@@ -52,6 +56,8 @@ nav button{
   color:#fff;
   font-weight:800;
   font-size:15px;
+  cursor:pointer;
+  touch-action:manipulation;
 }
 
 .container{
@@ -59,10 +65,11 @@ nav button{
   margin:auto;
   padding:15px;
 }
+
 .card{
   background:var(--card);
   border-radius:20px;
-  padding:20px;
+  padding:18px;
   border:1px solid var(--border);
   margin-bottom:15px;
 }
@@ -76,6 +83,8 @@ input,select,textarea{
   border:1px solid var(--border);
   margin-bottom:10px;
   font-size:16px;
+  outline:none;
+  background:#fff;
 }
 textarea{resize:vertical}
 
@@ -88,6 +97,8 @@ button.action{
   border:none;
   font-weight:900;
   font-size:16px;
+  cursor:pointer;
+  touch-action:manipulation;
 }
 
 /* DASHBOARD */
@@ -98,7 +109,7 @@ button.action{
 }
 .stat{
   background:#f9fafb;
-  padding:20px;
+  padding:18px;
   border-radius:18px;
   border:1px solid var(--border);
 }
@@ -112,20 +123,20 @@ button.action{
 .stat:nth-child(2) span{color:var(--primary)}
 .stat:nth-child(3) span{color:var(--success)}
 
-/* FOTO (cadastro) */
-.foto-wrap{
+/* CADASTRO - FOTO */
+.fotoBox{
   display:grid;
-  grid-template-columns:120px 1fr;
+  grid-template-columns:110px 1fr;
   gap:12px;
   align-items:stretch;
-  margin:10px 0 6px;
+  margin:10px 0 14px;
 }
-.foto-preview{
-  width:120px;
-  height:120px;
+.fotoPreview{
+  width:110px;
+  height:110px;
   border-radius:16px;
   border:1px dashed var(--border);
-  background:#f9fafb;
+  background:#fff;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -135,44 +146,47 @@ button.action{
   text-align:center;
   padding:10px;
 }
-.foto-preview img{
+.fotoPreview img{
   width:100%;
   height:100%;
   object-fit:cover;
-  display:block;
+  display:none;
 }
-.foto-actions{
+.fotoBtns{
   display:flex;
   flex-direction:column;
   gap:10px;
 }
-.btn-dark{
+.fotoBtns .mini{
   width:100%;
   padding:12px;
   border-radius:14px;
-  border:none;
-  background:#1f2937;
-  color:#fff;
+  border:0;
   font-weight:900;
-  font-size:16px;
+  cursor:pointer;
+  touch-action:manipulation;
 }
-.btn-danger{
-  width:100%;
-  padding:12px;
-  border-radius:14px;
-  border:none;
-  background:var(--danger);
-  color:#fff;
-  font-weight:900;
-  font-size:16px;
-}
-.hidden-input{display:none}
+.btnCamera{ background:#111827; color:#fff; }
+.btnGaleria{ background:#111827; color:#fff; }
+.btnRemover{ background:var(--danger); color:#fff; }
 
 /* VENDA */
-.venda-top{
-  padding:14px;
+.vendaTop{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-bottom:10px;
 }
-#vendaLista{margin-top:12px}
+.vendaTop input{ margin-bottom:0; }
+.clearBtn{
+  border:1px solid var(--border);
+  background:#fff;
+  color:var(--text);
+  border-radius:14px;
+  padding:12px 14px;
+  font-weight:900;
+  cursor:pointer;
+}
 
 .produto{
   position:relative;
@@ -185,6 +199,7 @@ button.action{
   margin-bottom:15px;
   background:#fff;
 }
+
 .produto img{
   width:90px;
   height:90px;
@@ -192,19 +207,25 @@ button.action{
   border-radius:14px;
   background:#e5e7eb;
 }
-.produto small{color:var(--muted)}
-.trash{
+
+/* Lixeira no cantinho */
+.trashBtn{
   position:absolute;
   top:10px;
   right:10px;
-  width:38px;
-  height:38px;
+  width:36px;
+  height:36px;
   border-radius:12px;
   border:1px solid var(--border);
   background:#fff;
   cursor:pointer;
-  font-size:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  touch-action:manipulation;
 }
+.trashBtn:active{ transform:scale(0.98); }
+.trashBtn svg{ width:18px; height:18px; }
 
 /* HISTÓRICO */
 .historico-item{
@@ -212,6 +233,7 @@ button.action{
   border-radius:18px;
   padding:12px;
   margin-bottom:12px;
+  background:#fff;
 }
 .historico-header{
   display:grid;
@@ -224,6 +246,7 @@ button.action{
   height:70px;
   object-fit:cover;
   border-radius:14px;
+  background:#e5e7eb;
 }
 .seta{
   font-size:18px;
@@ -238,7 +261,7 @@ button.action{
 }
 
 /* MOBILE */
-@media (max-width: 520px){
+@media (max-width:520px){
   header{padding:16px;font-size:20px}
   .container{padding:12px}
   .card{padding:16px}
@@ -246,8 +269,6 @@ button.action{
   .stat span{font-size:34px}
   .historico-header{grid-template-columns:64px 1fr 78px 24px}
   .historico-header img{width:64px;height:64px}
-  .foto-wrap{grid-template-columns:110px 1fr}
-  .foto-preview{width:110px;height:110px}
 }
 </style>
 </head>
@@ -256,16 +277,16 @@ button.action{
 <header>💰 Controle de Vendas</header>
 
 <nav>
-  <button type="button" onclick="mostrar('dashboard')">Dashboard</button>
-  <button type="button" onclick="mostrar('cadastro')">Cadastrar</button>
-  <button type="button" onclick="mostrar('venda')">Vender</button>
-  <button type="button" onclick="mostrar('historico')">Histórico</button>
+  <button onclick="mostrar('dashboard')">Dashboard</button>
+  <button onclick="mostrar('cadastro')">Cadastrar</button>
+  <button onclick="mostrar('venda')">Vender</button>
+  <button onclick="mostrar('historico')">Histórico</button>
 </nav>
 
 <div class="container">
 
   <!-- DASHBOARD -->
-  <div id="dashboard" class="tab card">
+  <div id="dashboard" class="card">
     <div class="dashboard">
       <div class="stat">Produtos em estoque<span id="qtd">0</span></div>
       <div class="stat">Valor em estoque<span>R$ <span id="valorEstoque">0.00</span></span></div>
@@ -274,40 +295,31 @@ button.action{
   </div>
 
   <!-- CADASTRO -->
-  <div id="cadastro" class="tab card hidden">
+  <div id="cadastro" class="card hidden">
     <input id="nomeProduto" placeholder="Nome do produto">
     <input id="valorCompra" type="number" inputmode="decimal" placeholder="Valor de compra">
 
-    <!-- inputs escondidos (SEM quadrado com X) -->
-    <input id="cameraInput" class="hidden-input" type="file" accept="image/*" capture="environment">
-    <input id="galleryInput" class="hidden-input" type="file" accept="image/*">
-
-    <div class="foto-wrap">
-      <div class="foto-preview" id="fotoPreview">
-        <div id="fotoPlaceholder">Sem foto<br>(opcional)</div>
-        <img id="fotoImg" alt="" style="display:none;">
+    <div class="fotoBox">
+      <div class="fotoPreview" id="fotoPreview">
+        <img id="fotoImg" alt="Foto do produto">
+        <div id="fotoTexto">Sem foto<br>(opcional)</div>
       </div>
 
-      <div class="foto-actions">
-        <button type="button" class="btn-dark" onclick="abrirCamera()">📷 Tirar foto</button>
-        <button type="button" class="btn-dark" onclick="abrirGaleria()">🖼️ Galeria</button>
-        <button type="button" class="btn-danger" onclick="removerFoto()">🧽 Remover foto</button>
+      <div class="fotoBtns">
+        <button class="mini btnCamera" type="button" onclick="pedirCamera()">📷 Tirar foto</button>
+        <button class="mini btnGaleria" type="button" onclick="pedirGaleria()">🖼️ Galeria</button>
+        <button class="mini btnRemover" type="button" onclick="removerFotoTemp()">🧽 Remover foto</button>
       </div>
     </div>
 
-    <button type="button" class="action" id="btnCadastrar" onclick="cadastrar()">Cadastrar Produto</button>
+    <button class="action" id="btnCadastrar" onclick="cadastrar()">Cadastrar Produto</button>
   </div>
 
   <!-- VENDA -->
-  <div id="venda" class="tab hidden">
-    <div class="card venda-top">
-      <input id="buscaVenda" placeholder="Pesquisar produto no estoque..." autocomplete="off">
-    </div>
-    <div id="vendaLista"></div>
-  </div>
+  <div id="venda" class="hidden"></div>
 
   <!-- HISTÓRICO -->
-  <div id="historico" class="tab card hidden">
+  <div id="historico" class="card hidden">
     <select id="filtroMes" onchange="atualizarHistorico()">
       <option value="">Todos os meses</option>
       <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
@@ -321,21 +333,17 @@ button.action{
 </div>
 
 <script>
-/* =======================
-   ESTADO
-======================= */
 let estoque = [];
 let historico = [];
 let lucroTotal = 0;
 
-/* imagemTemp fica só durante o cadastro */
+/* Foto temporária do cadastro (vai para o produto quando cadastrar) */
 let imagemTemp = null;
-let imagemCarregando = false;
-let abaAtual = "dashboard";
 
-/* =======================
-   Helpers base64 unicode-safe
-======================= */
+/* Debounce de salvar */
+let saveTimer = null;
+
+/* ===== Base64 unicode-safe ===== */
 function toB64Unicode(str){
   const bytes = new TextEncoder().encode(str);
   let bin = "";
@@ -348,29 +356,23 @@ function fromB64Unicode(b64){
   return new TextDecoder().decode(bytes);
 }
 
-/* =======================
-   Kodular bridge (TinyDB)
-   -> enviamos DADOS LEVES (sem imagens) p/ não bugar
-======================= */
-let saveTimer = null;
-
+/* ===== Kodular bridge ===== */
 function isKodular(){
   return !!(window.AppInventor && typeof window.AppInventor.setWebViewString === "function");
 }
 
-function liteSnapshotObj(updatedAt){
-  // NÃO mandamos base64 das imagens pro TinyDB (fica pesado e dá erro)
+function snapshotObj(updatedAt){
   return {
     v: 2,
     updatedAt: updatedAt || Date.now(),
-    estoque: estoque.map(p => ({ id:p.id, nome:p.nome, compra:p.compra, imgKey:p.imgKey || null })),
-    historico: historico.map(h => ({ ...h, imagem: undefined })), // histórico já usa imgKey também
+    estoque,
+    historico,
     lucroTotal
   };
 }
 
-function exportLiteSnapshotB64(updatedAt){
-  return toB64Unicode(JSON.stringify(liteSnapshotObj(updatedAt)));
+function exportSnapshotB64(updatedAt){
+  return toB64Unicode(JSON.stringify(snapshotObj(updatedAt)));
 }
 
 function enviarParaKodularDebounced(updatedAt){
@@ -378,15 +380,15 @@ function enviarParaKodularDebounced(updatedAt){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try{
-      const b64 = exportLiteSnapshotB64(updatedAt);
+      const b64 = exportSnapshotB64(updatedAt);
       window.AppInventor.setWebViewString(b64);
     }catch(e){
       console.log("Falha ao enviar para Kodular:", e);
     }
-  }, 500);
+  }, 600);
 }
 
-/* Kodular chama isso via EvaluateJS ao abrir (carregar do TinyDB) */
+/* O Kodular chama isso via EvaluateJS para carregar do TinyDB */
 window.loadFromKodularB64 = function(b64){
   try{
     if(!b64) return;
@@ -398,32 +400,14 @@ window.loadFromKodularB64 = function(b64){
     const remoteUpdated = Number(data.updatedAt || 0);
     const localUpdated  = Number(localStorage.getItem("updatedAt") || 0);
 
-    // só aplica se TinyDB for mais novo
     if(localUpdated && remoteUpdated && remoteUpdated <= localUpdated){
       return;
     }
 
-    const est = Array.isArray(data.estoque) ? data.estoque : [];
-    const hist = Array.isArray(data.historico) ? data.historico : [];
-    const lucro = Number(data.lucroTotal || 0);
+    estoque = Array.isArray(data.estoque) ? data.estoque : [];
+    historico = Array.isArray(data.historico) ? data.historico : [];
+    lucroTotal = Number(data.lucroTotal || 0);
 
-    // normaliza/migra
-    estoque = est.map(p => ({
-      id: p.id || makeId(),
-      nome: p.nome || "",
-      compra: Number(p.compra || 0),
-      imgKey: p.imgKey || null
-    }));
-
-    historico = hist.map(h => ({
-      ...h,
-      id: h.id || makeId(),
-      imgKey: h.imgKey || h.imgKey || null
-    }));
-
-    lucroTotal = lucro;
-
-    // salva local leve
     try{
       localStorage.setItem("estoque", JSON.stringify(estoque));
       localStorage.setItem("historico", JSON.stringify(historico));
@@ -432,41 +416,14 @@ window.loadFromKodularB64 = function(b64){
     }catch(e){}
 
     atualizarDashboard();
-    if(abaAtual === "venda") renderVenda();
     atualizarHistorico();
+    if(!document.getElementById("venda").classList.contains("hidden")) renderVenda();
   }catch(e){
     console.log("loadFromKodularB64 erro:", e);
   }
 };
 
-/* =======================
-   IDs + imagem storage local (separado)
-======================= */
-function makeId(){
-  return "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,8);
-}
-
-function imgKeyOf(id){ return "img_" + id; }
-
-function setImgLocal(key, dataUrl){
-  try{
-    localStorage.setItem(key, dataUrl);
-    return true;
-  }catch(e){
-    console.log("Sem espaço para salvar imagem:", e);
-    return false;
-  }
-}
-function getImgLocal(key){
-  try{ return localStorage.getItem(key); }catch(e){ return null; }
-}
-function delImgLocal(key){
-  try{ localStorage.removeItem(key); }catch(e){}
-}
-
-/* =======================
-   STORAGE (local + TinyDB)
-======================= */
+/* ===== Storage local + TinyDB ===== */
 function salvarDados(){
   const updatedAt = Date.now();
   try{
@@ -490,305 +447,243 @@ function carregarDados(){
     historico = [];
     lucroTotal = 0;
   }
-
-  // migra itens antigos que tinham "imagem" dentro do objeto
-  estoque = estoque.map(p => {
-    if(!p.id) p.id = makeId();
-    if(!p.imgKey) p.imgKey = imgKeyOf(p.id);
-
-    if(p.imagem && typeof p.imagem === "string" && p.imagem.startsWith("data:image")){
-      // joga pra storage local separada e remove do objeto (pra ficar leve)
-      if(!getImgLocal(p.imgKey)){
-        setImgLocal(p.imgKey, p.imagem);
-      }
-      delete p.imagem;
-    }
-    return p;
-  });
-
-  historico = historico.map(h => {
-    if(!h.id) h.id = makeId();
-    if(!h.imgKey) h.imgKey = imgKeyOf(h.id);
-    if(h.imagem && typeof h.imagem === "string" && h.imagem.startsWith("data:image")){
-      if(!getImgLocal(h.imgKey)){
-        setImgLocal(h.imgKey, h.imagem);
-      }
-      delete h.imagem;
-    }
-    return h;
-  });
-
   atualizarDashboard();
   atualizarHistorico();
-  salvarDados(); // salva já “leve”
+  renderFotoPreview();
 }
 
-/* =======================
-   NAV + limpeza da busca ao trocar de aba
-======================= */
+/* ===== Navegação ===== */
 function mostrar(id){
-  // se saiu da aba venda, limpa busca
-  if(abaAtual === "venda" && id !== "venda"){
-    const b = document.getElementById("buscaVenda");
-    if(b) b.value = "";
-  }
+  document.querySelectorAll('.card,#venda').forEach(e => e.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
 
-  document.querySelectorAll(".tab").forEach(t => t.classList.add("hidden"));
-  document.getElementById(id).classList.remove("hidden");
+  // ao trocar de aba, limpa o foco (evita bugs em webview)
+  try{ document.activeElement && document.activeElement.blur && document.activeElement.blur(); }catch(e){}
 
-  abaAtual = id;
-
-  if(id === "venda"){
-    const b = document.getElementById("buscaVenda");
-    if(b) b.value = "";
-    renderVenda();
-  }
+  if(id === "venda") renderVenda();
 }
 
-/* =======================
-   FOTO (camera/galeria via HTML, sem Kodular)
-======================= */
-const cameraInput = document.getElementById("cameraInput");
-const galleryInput = document.getElementById("galleryInput");
-
-cameraInput.addEventListener("change", (e) => carregarImagem(e, "camera"));
-galleryInput.addEventListener("change", (e) => carregarImagem(e, "gallery"));
-
-function abrirCamera(){
-  cameraInput.value = "";
-  cameraInput.click();
-}
-function abrirGaleria(){
-  galleryInput.value = "";
-  galleryInput.click();
-}
-function removerFoto(){
-  imagemTemp = null;
-  atualizarPreviewFoto(null);
+/* ===== Cadastro / Foto ===== */
+function normalizeImgSrc(path){
+  if(!path) return "";
+  if(path.startsWith("data:")) return path;
+  if(path.startsWith("content://")) return path;
+  if(path.startsWith("file://")) return path;
+  if(path.startsWith("/")) return "file://" + path;   // ok em vários webviews
+  return "file:///" + path;
 }
 
-function atualizarPreviewFoto(dataUrl){
+function renderFotoPreview(){
   const img = document.getElementById("fotoImg");
-  const ph = document.getElementById("fotoPlaceholder");
-  if(dataUrl){
-    img.src = dataUrl;
+  const txt = document.getElementById("fotoTexto");
+  const src = normalizeImgSrc(imagemTemp);
+
+  if(src){
+    img.src = src;
     img.style.display = "block";
-    ph.style.display = "none";
+    txt.style.display = "none";
   }else{
     img.removeAttribute("src");
     img.style.display = "none";
-    ph.style.display = "block";
+    txt.style.display = "block";
   }
 }
 
-function carregarImagem(e){
-  const file = e.target.files && e.target.files[0];
-  if(!file) return;
-
-  imagemCarregando = true;
-  document.getElementById("btnCadastrar").disabled = true;
-
-  const r = new FileReader();
-  r.onload = () => {
-    const img = new Image();
-    img.onload = () => {
-      // compressão forte p/ não estourar armazenamento
-      const max = 520;      // ↓ se quiser ainda mais leve
-      const quality = 0.65; // ↓ se quiser ainda mais leve
-
-      let w = img.width, h = img.height;
-      const scale = Math.min(1, max / Math.max(w, h));
-      const cw = Math.round(w * scale);
-      const ch = Math.round(h * scale);
-
-      const canvas = document.createElement("canvas");
-      canvas.width = cw;
-      canvas.height = ch;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, cw, ch);
-
-      imagemTemp = canvas.toDataURL("image/jpeg", quality);
-      atualizarPreviewFoto(imagemTemp);
-
-      imagemCarregando = false;
-      document.getElementById("btnCadastrar").disabled = false;
-    };
-    img.src = r.result;
-  };
-  r.readAsDataURL(file);
+function removerFotoTemp(){
+  imagemTemp = null;
+  renderFotoPreview();
 }
 
-/* =======================
-   CADASTRO
-======================= */
+/* Botões: mandam comando para o Kodular (com timestamp para SEMPRE disparar) */
+function pedirCamera(){
+  if(isKodular()){
+    window.AppInventor.setWebViewString("CMD:CAMERA|" + Date.now());
+  }else{
+    alert("No navegador (fora do app), a câmera do Kodular não existe.");
+  }
+}
+
+function pedirGaleria(){
+  if(isKodular()){
+    window.AppInventor.setWebViewString("CMD:GALERIA|" + Date.now());
+  }else{
+    alert("No navegador (fora do app), a galeria do Kodular não existe.");
+  }
+}
+
+/* Kodular devolve o caminho aqui */
+window.kodularCameraDone = function(path){
+  imagemTemp = path || null;
+  renderFotoPreview();
+};
+window.kodularGalleryDone = function(path){
+  imagemTemp = path || null;
+  renderFotoPreview();
+};
+
 function cadastrar(){
-  if(imagemCarregando) return alert("Aguarde a imagem carregar.");
   if(!nomeProduto.value || !valorCompra.value) return alert("Preencha tudo");
 
-  const id = makeId();
-  const key = imgKeyOf(id);
-
-  // salva imagem local separada (se houver)
-  if(imagemTemp){
-    const ok = setImgLocal(key, imagemTemp);
-    if(!ok){
-      alert("Seu armazenamento está cheio para fotos. Cadastre sem foto ou diminua a qualidade.");
-      // ainda deixa cadastrar sem foto
-    }
-  }
-
   estoque.push({
-    id,
-    nome: nomeProduto.value,
+    nome: nomeProduto.value.trim(),
     compra: +valorCompra.value,
-    imgKey: imagemTemp ? key : null
+    imagem: imagemTemp ? normalizeImgSrc(imagemTemp) : null
   });
 
   nomeProduto.value = "";
   valorCompra.value = "";
   imagemTemp = null;
-  atualizarPreviewFoto(null);
+  renderFotoPreview();
 
   salvarDados();
   atualizarDashboard();
 }
 
-/* =======================
-   VENDA + BUSCA + EXCLUIR ITEM DO ESTOQUE (lixeira)
-======================= */
-document.getElementById("buscaVenda").addEventListener("input", () => {
-  // não recria o input -> teclado não some
-  renderVendaLista();
-});
-
+/* ===== Venda ===== */
 function renderVenda(){
-  renderVendaLista();
+  const root = document.getElementById("venda");
+
+  const top = `
+    <div class="card">
+      <div class="vendaTop">
+        <input id="buscaVenda" placeholder="Pesquisar produto..." oninput="filtrarVenda()" />
+        <button class="clearBtn" type="button" onclick="limparBuscaVenda()">Limpar</button>
+      </div>
+      <div id="vendaLista"></div>
+    </div>
+  `;
+  root.innerHTML = top;
+
+  filtrarVenda();
 }
 
-function renderVendaLista(){
-  const busca = (document.getElementById("buscaVenda").value || "").trim().toLowerCase();
+function limparBuscaVenda(){
+  const b = document.getElementById("buscaVenda");
+  if(b){ b.value = ""; b.blur(); }
+  filtrarVenda();
+}
+
+function filtrarVenda(){
+  const term = (document.getElementById("buscaVenda")?.value || "").trim().toLowerCase();
   const lista = document.getElementById("vendaLista");
-  lista.innerHTML = "";
+  if(!lista) return;
 
   const itens = estoque
-    .map(p => p)
-    .filter(p => !busca || (p.nome || "").toLowerCase().includes(busca));
+    .map((p, idx) => ({p, idx}))
+    .filter(x => !term || (x.p.nome || "").toLowerCase().includes(term));
 
   if(itens.length === 0){
-    lista.innerHTML = `<div class="card"><b>Nenhum item encontrado.</b></div>`;
+    lista.innerHTML = `<div style="color:var(--muted);font-weight:700;padding:8px">Nenhum item encontrado.</div>`;
     return;
   }
 
-  itens.forEach((p) => {
-    const imgData = p.imgKey ? getImgLocal(p.imgKey) : null;
+  lista.innerHTML = itens.map(({p, idx}) => `
+    <div class="produto">
+      <button class="trashBtn" title="Excluir do estoque" onclick="excluirDoEstoque(${idx})" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 6h18"></path>
+          <path d="M8 6V4h8v2"></path>
+          <path d="M6 6l1 16h10l1-16"></path>
+          <path d="M10 11v6"></path>
+          <path d="M14 11v6"></path>
+        </svg>
+      </button>
 
-    lista.innerHTML += `
-      <div class="produto">
-        <button type="button" class="trash" onclick="excluirDoEstoque('${p.id}')">🗑️</button>
-        <img src="${imgData || ''}">
-        <div>
-          <strong>${escapeHtml(p.nome)}</strong><br>
-          <small>Custo: R$ ${Number(p.compra||0).toFixed(2)}</small>
-          <input type="date" id="data-${p.id}">
-          <input type="number" inputmode="decimal" placeholder="Valor de venda" id="venda-${p.id}">
-          <textarea placeholder="Nota / Detalhes" id="nota-${p.id}"></textarea>
-          <button type="button" class="action" style="background:var(--success)" onclick="vender('${p.id}')">Vender</button>
-        </div>
-      </div>`;
-  });
+      <img src="${p.imagem || ''}" onerror="this.style.display='none'">
+      <div>
+        <strong>${p.nome}</strong><br>
+        <small style="color:var(--muted)">Custo: R$ ${Number(p.compra||0).toFixed(2)}</small>
+        <input type="date" id="data-${idx}">
+        <input type="number" inputmode="decimal" placeholder="Valor de venda" id="venda-${idx}">
+        <textarea placeholder="Nota / Detalhes" id="nota-${idx}"></textarea>
+        <button class="action" style="background:var(--success)" onclick="vender(${idx})">Vender</button>
+      </div>
+    </div>
+  `).join("");
 }
 
-function excluirDoEstoque(id){
-  const idx = estoque.findIndex(p => p.id === id);
-  if(idx < 0) return;
+function excluirDoEstoque(i){
   if(!confirm("Excluir este item do estoque?")) return;
-
-  const p = estoque[idx];
-  if(p.imgKey) delImgLocal(p.imgKey);
-
-  estoque.splice(idx,1);
+  estoque.splice(i, 1);
   salvarDados();
   atualizarDashboard();
-  renderVendaLista();
+  filtrarVenda();
 }
 
-/* =======================
-   VENDER
-======================= */
-function vender(id){
-  const idx = estoque.findIndex(p => p.id === id);
-  if(idx < 0) return;
+function vender(i){
+  const v = parseFloat(document.getElementById(`venda-${i}`).value);
+  if(!v) return alert("Informe o valor de venda");
 
-  const v = parseFloat(document.getElementById(`venda-${id}`).value);
-  if(!v) return alert("Informe o valor");
+  const p = estoque[i];
+  if(!p) return alert("Item não encontrado no estoque (atualize a lista).");
 
-  const p = estoque[idx];
-  const nota = document.getElementById(`nota-${id}`).value;
-  const dataInput = document.getElementById(`data-${id}`).value;
+  const nota = document.getElementById(`nota-${i}`).value;
+  const dataInput = document.getElementById(`data-${i}`).value;
   const dataVenda = dataInput ? new Date(dataInput + "T12:00") : new Date();
 
-  lucroTotal += v - p.compra;
+  lucroTotal += v - (p.compra || 0);
 
   historico.push({
-    id: makeId(),
-    nome: p.nome,
-    compra: Number(p.compra||0),
+    ...p,
     venda: v,
     nota,
     data: dataVenda.toLocaleDateString("pt-BR"),
     mes: dataVenda.getMonth(),
-    ts: dataVenda.getTime(),
-    imgKey: p.imgKey || null
+    ts: dataVenda.getTime()
   });
 
-  estoque.splice(idx,1);
+  estoque.splice(i,1);
 
   salvarDados();
   atualizarDashboard();
   atualizarHistorico();
-  renderVendaLista();
+  filtrarVenda();
 }
 
-/* =======================
-   DASHBOARD
-======================= */
+/* ===== Dashboard ===== */
 function atualizarDashboard(){
-  qtd.textContent = estoque.length;
-  valorEstoque.textContent = estoque.reduce((s,p)=>s+Number(p.compra||0),0).toFixed(2);
-  lucro.textContent = lucroTotal.toFixed(2);
+  document.getElementById("qtd").textContent = estoque.length;
+  document.getElementById("valorEstoque").textContent =
+    estoque.reduce((s,p)=>s+Number(p.compra||0),0).toFixed(2);
+  document.getElementById("lucro").textContent = Number(lucroTotal||0).toFixed(2);
 }
 
-/* =======================
-   HISTÓRICO
-======================= */
+/* ===== Histórico ===== */
 function atualizarHistorico(){
-  const mes = filtroMes.value;
+  const mes = document.getElementById("filtroMes").value;
+  const historicoLista = document.getElementById("historicoLista");
   historicoLista.innerHTML = "";
 
-  historico
+  const lista = historico
     .slice()
     .sort((a,b)=>b.ts-a.ts)
-    .filter(h => mes==="" || h.mes==mes)
-    .forEach((h,i)=>{
-      const imgData = h.imgKey ? getImgLocal(h.imgKey) : null;
+    .filter(h => mes==="" || String(h.mes)===String(mes));
 
-      historicoLista.innerHTML += `
-        <div class="historico-item">
-          <div class="historico-header">
-            <img src="${imgData || ''}">
-            <strong onclick="toggleDetalhes(${i})">${escapeHtml(h.nome)}</strong>
-            <div onclick="toggleDetalhes(${i})">${h.data}</div>
-            <div class="seta" id="seta-${i}" onclick="toggleDetalhes(${i})">▶</div>
-          </div>
-          <div class="historico-detalhes" id="detalhes-${i}">
-            <p>Compra: R$ ${Number(h.compra||0).toFixed(2)}</p>
-            <p>Venda: R$ ${Number(h.venda||0).toFixed(2)}</p>
-            <p>Lucro: R$ ${(Number(h.venda||0)-Number(h.compra||0)).toFixed(2)}</p>
-            <p>Nota: ${escapeHtml(h.nota || "-")}</p>
-            <button type="button" class="action" style="background:var(--danger)" onclick="excluirVenda(${i})">Excluir</button>
-          </div>
-        </div>`;
-    });
+  if(lista.length === 0){
+    historicoLista.innerHTML = `<div style="color:var(--muted);font-weight:700;padding:8px">Sem vendas no período.</div>`;
+    return;
+  }
+
+  lista.forEach((h,i)=>{
+    historicoLista.innerHTML += `
+      <div class="historico-item">
+        <div class="historico-header">
+          <img src="${h.imagem || ''}" onerror="this.style.display='none'">
+          <strong onclick="toggleDetalhes(${i})">${h.nome}</strong>
+          <div onclick="toggleDetalhes(${i})">${h.data}</div>
+          <div class="seta" id="seta-${i}" onclick="toggleDetalhes(${i})">▶</div>
+        </div>
+        <div class="historico-detalhes" id="detalhes-${i}">
+          <p>Compra: R$ ${Number(h.compra||0).toFixed(2)}</p>
+          <p>Venda: R$ ${Number(h.venda||0).toFixed(2)}</p>
+          <p>Lucro: R$ ${(Number(h.venda||0)-Number(h.compra||0)).toFixed(2)}</p>
+          <p>Nota: ${h.nota || '-'}</p>
+          <button class="action" style="background:var(--danger)" onclick="excluirVenda(${i})">Excluir</button>
+        </div>
+      </div>
+    `;
+  });
 }
 
 function toggleDetalhes(i){
@@ -801,24 +696,26 @@ function toggleDetalhes(i){
 
 function excluirVenda(i){
   if(!confirm("Excluir esta venda?")) return;
-  const h = historico[i];
-  lucroTotal -= (Number(h.venda||0) - Number(h.compra||0));
-  historico.splice(i,1);
+
+  // atenção: i aqui é do "lista filtrada/ordenada", então precisamos achar no array real
+  const mes = document.getElementById("filtroMes").value;
+  const lista = historico
+    .slice()
+    .sort((a,b)=>b.ts-a.ts)
+    .filter(h => mes==="" || String(h.mes)===String(mes));
+
+  const alvo = lista[i];
+  if(!alvo) return;
+
+  const idxReal = historico.findIndex(x => x.ts===alvo.ts && x.nome===alvo.nome && x.venda===alvo.venda);
+  if(idxReal < 0) return;
+
+  lucroTotal -= (Number(alvo.venda||0) - Number(alvo.compra||0));
+  historico.splice(idxReal, 1);
+
   salvarDados();
   atualizarDashboard();
   atualizarHistorico();
-}
-
-/* =======================
-   Utils
-======================= */
-function escapeHtml(str){
-  return String(str)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
 }
 
 /* INIT */
