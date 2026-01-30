@@ -335,10 +335,6 @@ button.action:disabled{
           <button class="btnSmall primary" type="button" onclick="abrirGaleria()">🖼️ Selecionar foto</button>
           <button class="btnSmall danger" type="button" onclick="removerFoto()">🧹 Remover</button>
         </div>
-
-        <div style="font-size:13px;opacity:.7;margin-top:8px;line-height:1.3">
-          Dica: fotos são comprimidas para não “bugar” no salvamento.
-        </div>
       </div>
     </div>
 
@@ -431,7 +427,7 @@ window.loadFromKodularB64 = function(b64){
     const localUpdated  = Number(localStorage.getItem("updatedAt") || 0);
 
     if(localUpdated && remoteUpdated && remoteUpdated <= localUpdated){
-      return; // não sobrescreve com dado velho
+      return;
     }
 
     estoque = Array.isArray(data.estoque) ? data.estoque : [];
@@ -486,11 +482,7 @@ function carregarDados(){
 function mostrar(id){
   document.querySelectorAll('.card,#venda').forEach(e => e.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
-
-  // ao entrar em "venda", renderiza lista
   if(id === "venda") renderVenda();
-
-  // (opcional) se quiser limpar algo ao trocar de aba, faça aqui
 }
 
 /* ====================== GALERIA (somente) ====================== */
@@ -708,7 +700,6 @@ function excluirVenda(i){
   if(!confirm("Excluir esta venda?")) return;
   const mes = document.getElementById("filtroMes").value;
 
-  // precisa achar o item real no historico (porque a lista é filtrada/ordenada)
   const arr = historico
     .slice()
     .sort((a,b)=>b.ts-a.ts)
@@ -717,7 +708,6 @@ function excluirVenda(i){
   const item = arr[i];
   if(!item) return;
 
-  // remove do array original pelo ts + id
   const idxReal = historico.findIndex(h => h.ts===item.ts && h.id===item.id);
   if(idxReal === -1) return;
 
