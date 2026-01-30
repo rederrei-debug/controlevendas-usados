@@ -29,48 +29,48 @@ body{
 }
 
 header{
-  padding:18px 16px;
+  padding:14px 12px;          /* menor p/ caber sem rolagem */
   text-align:center;
-  font-size:22px;
+  font-size:20px;             /* menor p/ caber */
   font-weight:800;
   background:var(--primary);
   color:#fff;
 }
 
-/* NAV (2x2) */
+/* NAV (2x2) compacta */
 nav{
   display:flex;
   flex-wrap:wrap;
-  gap:10px;
-  padding:14px;
+  gap:8px;
+  padding:10px 12px;
   max-width:900px;
   margin:auto;
 }
 
 nav button{
-  flex:1 1 calc(50% - 10px);
-  padding:14px 12px;
-  border-radius:22px;
+  flex:1 1 calc(50% - 8px);
+  padding:12px 10px;          /* menor */
+  border-radius:20px;
   border:none;
   background:var(--primary);
   color:#fff;
   font-weight:800;
-  font-size:15px;
+  font-size:14px;             /* menor */
   cursor:pointer;
 }
 
 .container{
   max-width:900px;
   margin:auto;
-  padding:14px;
+  padding:10px 12px;          /* menor */
 }
 
 .card{
   background:var(--card);
   border-radius:20px;
-  padding:16px;
+  padding:14px;               /* menor */
   border:1px solid var(--border);
-  margin-bottom:14px;
+  margin-bottom:12px;
 }
 
 .hidden{display:none}
@@ -107,41 +107,44 @@ button.action:disabled{
 /* DASHBOARD */
 .dashboard{
   display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:12px;
+  grid-template-columns:repeat(4,1fr); /* desktop: 4 colunas */
+  gap:10px;
 }
 
 .stat{
   background:#f9fafb;
-  padding:16px;
+  padding:12px;               /* menor */
   border-radius:18px;
   border:1px solid var(--border);
 }
 
 .stat .label{
-  font-size:14px;
-  font-weight:700;
+  font-size:13px;
+  font-weight:800;
   opacity:.9;
 }
 
 .stat .value{
   display:block;
-  font-size:28px;
+  font-size:22px;             /* menor p/ caber */
   font-weight:900;
   margin-top:6px;
+  line-height:1.1;
 }
 
 .stat .sub{
   margin-top:6px;
-  font-size:14px;
-  font-weight:800;
+  font-size:12px;
+  font-weight:900;
   opacity:.9;
+  line-height:1.1;
 }
 
-.stat:nth-child(1) .value{color:var(--warning)}
-.stat:nth-child(2) .value{color:var(--primary)}
-.stat:nth-child(3) .value{color:var(--success)}
-.stat:nth-child(3) .sub{color:var(--success)}
+.stat:nth-child(1) .value{color:var(--warning)}  /* qtd */
+.stat:nth-child(2) .value{color:var(--primary)}  /* valor estoque */
+.stat:nth-child(3) .value{color:#0f766e}         /* faturamento */
+.stat:nth-child(4) .value{color:var(--success)}  /* lucro */
+.stat:nth-child(4) .sub{color:var(--success)}
 
 /* CADASTRO imagem */
 .imgRow{
@@ -282,13 +285,17 @@ button.action:disabled{
   display:none;
 }
 
-/* MOBILE */
+/* MOBILE: dashboard 2x2 (sem rolagem no dashboard) */
 @media (max-width: 520px){
-  header{padding:16px 12px;font-size:20px}
-  .container{padding:12px}
-  .card{padding:14px}
-  .dashboard{grid-template-columns:1fr}
-  .stat .value{font-size:34px}
+  header{padding:12px 12px;font-size:19px}
+  nav{padding:10px 12px}
+  nav button{padding:12px 10px;font-size:14px}
+  .container{padding:10px 12px}
+  .card{padding:12px}
+  .dashboard{grid-template-columns:repeat(2,1fr)}  /* 2x2 */
+  .stat{padding:12px}
+  .stat .value{font-size:22px}
+  .stat .sub{font-size:12px}
   .historico-header{grid-template-columns:64px 1fr 78px 24px}
   .historico-header img{width:64px;height:64px}
 }
@@ -318,6 +325,12 @@ button.action:disabled{
       <div class="stat">
         <div class="label">Valor em estoque</div>
         <span class="value">R$ <span id="valorEstoque">0.00</span></span>
+      </div>
+
+      <!-- NOVO: FATURAMENTO TOTAL -->
+      <div class="stat">
+        <div class="label">Faturamento total</div>
+        <span class="value">R$ <span id="faturamento">0.00</span></span>
       </div>
 
       <div class="stat">
@@ -660,13 +673,16 @@ function atualizarDashboard(){
   const totalEstoque = estoque.reduce((s,p)=>s+Number(p.compra||0),0);
   document.getElementById("valorEstoque").textContent = totalEstoque.toFixed(2);
 
+  // NOVO: faturamento total (soma das vendas)
+  const faturamentoTotal = historico.reduce((s,h)=>s+Number(h.venda||0),0);
+  document.getElementById("faturamento").textContent = faturamentoTotal.toFixed(2);
+
   document.getElementById("lucro").textContent = Number(lucroTotal||0).toFixed(2);
 
   // % lucro sobre o investimento (itens vendidos)
   const investimentoVendido = historico.reduce((s,h)=>s+Number(h.compra||0),0);
   const ratio = investimentoVendido > 0 ? (Number(lucroTotal||0) / investimentoVendido) : 0;
   const pct = ratio.toLocaleString("pt-BR", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
   document.getElementById("lucroPercent").textContent = `Lucro do investimento: ${pct}`;
 }
 
