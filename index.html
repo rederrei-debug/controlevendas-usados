@@ -124,16 +124,24 @@ button.action:disabled{
   opacity:.9;
 }
 
-.stat span{
+.stat .value{
   display:block;
   font-size:28px;
   font-weight:900;
   margin-top:6px;
 }
 
-.stat:nth-child(1) span{color:var(--warning)}
-.stat:nth-child(2) span{color:var(--primary)}
-.stat:nth-child(3) span{color:var(--success)}
+.stat .sub{
+  margin-top:6px;
+  font-size:14px;
+  font-weight:800;
+  opacity:.9;
+}
+
+.stat:nth-child(1) .value{color:var(--warning)}
+.stat:nth-child(2) .value{color:var(--primary)}
+.stat:nth-child(3) .value{color:var(--success)}
+.stat:nth-child(3) .sub{color:var(--success)}
 
 /* CADASTRO imagem */
 .imgRow{
@@ -280,7 +288,7 @@ button.action:disabled{
   .container{padding:12px}
   .card{padding:14px}
   .dashboard{grid-template-columns:1fr}
-  .stat span{font-size:34px}
+  .stat .value{font-size:34px}
   .historico-header{grid-template-columns:64px 1fr 78px 24px}
   .historico-header img{width:64px;height:64px}
 }
@@ -304,15 +312,18 @@ button.action:disabled{
     <div class="dashboard">
       <div class="stat">
         <div class="label">Produtos em estoque</div>
-        <span id="qtd">0</span>
+        <span class="value" id="qtd">0</span>
       </div>
+
       <div class="stat">
         <div class="label">Valor em estoque</div>
-        <span>R$ <span id="valorEstoque">0.00</span></span>
+        <span class="value">R$ <span id="valorEstoque">0.00</span></span>
       </div>
+
       <div class="stat">
         <div class="label">Lucro total</div>
-        <span>R$ <span id="lucro">0.00</span></span>
+        <span class="value">R$ <span id="lucro">0.00</span></span>
+        <div class="sub" id="lucroPercent">Lucro do investimento: 0,0%</div>
       </div>
     </div>
   </div>
@@ -328,7 +339,7 @@ button.action:disabled{
       </div>
 
       <div>
-        <!-- SOMENTE GALERIA/ARQUIVOS -->
+        <!-- SOMENTE GALERIA -->
         <input id="imgInput" type="file" accept="image/*" style="display:none" />
 
         <div class="btnRow">
@@ -414,7 +425,7 @@ function enviarParaKodularDebounced(updatedAt){
   }, 500);
 }
 
-/* Função para o Kodular injetar dados (EvaluateJS chama isso) */
+/* Função para o Kodular injetar dados */
 window.loadFromKodularB64 = function(b64){
   try{
     if(!b64) return;
@@ -515,7 +526,7 @@ function renderPreview(src){
   box.appendChild(im);
 }
 
-/* compressão para não estourar limite */
+/* compressão */
 function carregarImagem(e){
   const file = e.target.files && e.target.files[0];
   if(!file) return;
@@ -645,10 +656,18 @@ function vender(i){
 /* ====================== DASHBOARD ====================== */
 function atualizarDashboard(){
   document.getElementById("qtd").textContent = estoque.length;
-  document.getElementById("valorEstoque").textContent =
-    estoque.reduce((s,p)=>s+Number(p.compra||0),0).toFixed(2);
+
+  const totalEstoque = estoque.reduce((s,p)=>s+Number(p.compra||0),0);
+  document.getElementById("valorEstoque").textContent = totalEstoque.toFixed(2);
 
   document.getElementById("lucro").textContent = Number(lucroTotal||0).toFixed(2);
+
+  // % lucro sobre o investimento (itens vendidos)
+  const investimentoVendido = historico.reduce((s,h)=>s+Number(h.compra||0),0);
+  const ratio = investimentoVendido > 0 ? (Number(lucroTotal||0) / investimentoVendido) : 0;
+  const pct = ratio.toLocaleString("pt-BR", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+  document.getElementById("lucroPercent").textContent = `Lucro do investimento: ${pct}`;
 }
 
 /* ====================== HISTÓRICO ====================== */
